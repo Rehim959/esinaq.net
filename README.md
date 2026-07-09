@@ -43,18 +43,24 @@ git push -u origin main
 
 ## azhosting.az-a deploy
 
-1. GitHub-dan clone edin və ya FTP ilə faylları yükləyin.
-2. Domain **Document Root** = `public/` qovluğu (vacib!).
-3. `.env.example` → `.env` kopyalayın: DB, SMTP, **güclü** `ADMIN_PASSWORD`, `APP_SECRET`, `INSTALL_TOKEN`.
-4. Brauzerdə `https://esinaq.net/install.php?token=YOUR_INSTALL_TOKEN` açın → quraşdırın.
-5. **Dərhal** `public/install.php` silin (və `storage/install.lock` qalsın).
-6. Admin paneldə şifrəni dəyişin / güclü saxlayın.
+1. GitHub-dan clone / FTP ilə faylları yükləyin.
+2. Domain **Document Root** = `public/` (vacib!).
+3. `.env.example` → `.env` kopyalayın və **bütün** `CHANGE_*` dəyərlərini dəyişin:
+   - `INSTALL_TOKEN` — ən azı 16 simvol, təsadüfi
+   - `ADMIN_PASSWORD` — ən azı 10 simvol, güclü
+   - `APP_SECRET` — təsadüfi
+   - DB + SMTP
+4. `storage/` və `storage/rate_limits/` yazıla bilən olsun (chmod 750).
+5. Brauzerdə: `https://esinaq.net/install.php?token=YOUR_INSTALL_TOKEN` → quraşdırın.
+6. **Dərhal** `public/install.php` silin (`storage/install.lock` qalsın).
+7. `https://esinaq.net/admin/login` ilə daxil olun və smoke-test edin.
 
 ```env
 APP_URL=https://esinaq.net
 APP_DEBUG=false
-INSTALL_TOKEN=uzun_tesadufi_token
-ADMIN_PASSWORD=GüclüUnikalŞifrə!
+SESSION_SECURE=true
+INSTALL_TOKEN=uzun_tesadufi_token_16plus
+ADMIN_PASSWORD=GüclüUnikalŞifrə10plus!
 DB_HOST=localhost
 DB_NAME=...
 DB_USER=...
@@ -69,11 +75,12 @@ MAIL_FROM=esinaq@esinaq.net
 
 ### Təhlükəsizlik (deploy sonrası)
 
-- Document root yalnız `public/` olmalıdır — `.env` heç vaxt web-dən oxunmamalıdır
-- `install.php` silinməlidir
+- Document root yalnız `public/` — `.env` web-dən oxunmamalıdır
+- `install.php` **mütləq** silinməlidir
 - `APP_DEBUG=false`
-- Admin şifrəsi `Admin123!` olmamalıdır
+- Admin şifrəsi `CHANGE_*` / `Admin123!` olmamalıdır
 - `storage/` yazıla bilən olmalıdır (rate limit + install.lock)
+
 ## Sual formatı (admin copy-paste)
 
 ```

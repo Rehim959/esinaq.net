@@ -45,8 +45,8 @@ final class ExamController
         }
 
         $rateKey = RateLimiter::clientKey('exam_login:' . substr(hash('sha256', $token), 0, 16));
-        if (RateLimiter::tooManyAttempts($rateKey, 8, 900)) {
-            $wait = RateLimiter::availableIn($rateKey, 900);
+        if (RateLimiter::tooManyAttempts($rateKey, 5, 1800)) {
+            $wait = RateLimiter::availableIn($rateKey, 1800);
             Session::flash('error', __('err_rate_limit', ['n' => (string) max(1, (int) ceil($wait / 60))]));
             redirect('/imtahan/' . $token);
         }
@@ -55,7 +55,7 @@ final class ExamController
         $child = Auth::attemptChild($token, $password);
 
         if (!$child) {
-            RateLimiter::hit($rateKey, 900);
+            RateLimiter::hit($rateKey, 1800);
             Session::flash('error', __('err_child_password'));
             redirect('/imtahan/' . $token);
         }

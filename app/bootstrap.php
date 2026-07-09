@@ -32,7 +32,7 @@ date_default_timezone_set('Asia/Baku');
 \App\Core\Session::start();
 \App\Core\Lang::boot();
 
-// Ensure admin exists on first boot (create only — never auto-reset password in production)
+// Ensure admin exists on first boot (create only — never auto-reset; never use placeholders)
 try {
     $pdo = \App\Core\Database::connection();
     $adminEmail = (string) env('ADMIN_EMAIL', 'admin@esinaq.net');
@@ -40,7 +40,7 @@ try {
     $stmt = $pdo->prepare('SELECT id FROM admins WHERE email = ?');
     $stmt->execute([$adminEmail]);
     $admin = $stmt->fetch();
-    if (!$admin && $adminPass !== '' && $adminPass !== 'CHANGE_ME') {
+    if (!$admin && !is_placeholder_secret($adminPass) && strlen($adminPass) >= 10) {
         $pdo->prepare('INSERT INTO admins (email, password_hash, full_name) VALUES (?, ?, ?)')
             ->execute([$adminEmail, password_hash($adminPass, PASSWORD_DEFAULT), 'Sistem Administratoru']);
     }
@@ -62,13 +62,6 @@ try {
         foreach ($subjects as $s) {
             $ins->execute($s);
         }
-    }
-
-    // Widen password_hint for bcrypt hashes (safe if already applied)
-    try {
-        $pdo->exec('ALTER TABLE children MODIFY password_hint VARCHAR(255) NOT NULL');
-    } catch (\Throwable) {
-        // ignore if no permission / already correct
     }
 } catch (\Throwable) {
     // DB may not be ready yet during first docker boot

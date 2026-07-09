@@ -143,11 +143,16 @@ final class MailService
     {
         try {
             $pdo = Database::connection();
+            $preview = mb_substr(strip_tags($body), 0, 400);
+            // Never store credentials in email_logs
+            $preview = preg_replace('/Şifrə\s*:\s*\S+/iu', 'Şifrə: [REDACTED]', $preview) ?? $preview;
+            $preview = preg_replace('/Password\s*:\s*\S+/iu', 'Password: [REDACTED]', $preview) ?? $preview;
+            $preview = preg_replace('/Пароль\s*:\s*\S+/iu', 'Пароль: [REDACTED]', $preview) ?? $preview;
             $stmt = $pdo->prepare('INSERT INTO email_logs (recipient, subject, body_preview, status, error_message) VALUES (?, ?, ?, ?, ?)');
             $stmt->execute([
                 $to,
                 $subject,
-                mb_substr(strip_tags($body), 0, 400),
+                $preview,
                 $ok ? 'sent' : 'failed',
                 $error,
             ]);

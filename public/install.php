@@ -27,10 +27,10 @@ if (is_file($lockFile)) {
     exit;
 }
 
-if ($installToken === '' || $installToken === 'CHANGE_ME') {
+if (is_placeholder_secret($installToken) || strlen($installToken) < 16) {
     http_response_code(403);
     echo '<!DOCTYPE html><html lang="az"><head><meta charset="UTF-8"><title>Install</title></head><body style="font-family:system-ui;max-width:560px;margin:40px auto;padding:0 16px">';
-    echo '<h1>Install deaktivdir</h1><p><code>.env</code> faylında güclü <code>INSTALL_TOKEN</code> təyin edin, sonra bu səhifəni yenidən açın.</p></body></html>';
+    echo '<h1>Install deaktivdir</h1><p><code>.env</code> faylında güclü unikal <code>INSTALL_TOKEN</code> təyin edin (ən azı 16 simvol, <code>CHANGE_*</code> olmamalıdır).</p></body></html>';
     exit;
 }
 
@@ -54,8 +54,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($name === '' || $user === '') {
             throw new RuntimeException('.env faylında DB_NAME və DB_USER yazılmalıdır.');
         }
-        if ($adminPass === '' || $adminPass === 'CHANGE_ME' || $adminPass === 'Admin123!') {
-            throw new RuntimeException('ADMIN_PASSWORD güclü və unikal olmalıdır (Admin123! qadağandır).');
+        if (is_placeholder_secret($adminPass) || strlen($adminPass) < 10) {
+            throw new RuntimeException('ADMIN_PASSWORD ən azı 10 simvol olmalı və CHANGE_* / Admin123! kimi placeholder olmamalıdır.');
         }
 
         $pdo = new PDO("mysql:host={$host};port={$port};charset=utf8mb4", $user, $pass, [

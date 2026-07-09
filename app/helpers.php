@@ -61,6 +61,30 @@ function brand_name(): string
     return 'eSınaq.net';
 }
 
+/** Reject copy-paste placeholders from .env.example */
+function is_placeholder_secret(?string $value): bool
+{
+    $v = trim((string) $value);
+    if ($v === '') {
+        return true;
+    }
+    if (preg_match('/^CHANGE[_-]/i', $v)) {
+        return true;
+    }
+    $blocked = [
+        'Admin123!',
+        'password',
+        '123456',
+        'your_db_password',
+        'your_mail_password',
+        'CHANGE_ME',
+        'CHANGE_ME_STRONG_PASSWORD',
+        'CHANGE_ME_TO_LONG_RANDOM_TOKEN',
+        'CHANGE_THIS_TO_RANDOM_32_CHAR_STRING',
+    ];
+    return in_array($v, $blocked, true);
+}
+
 /** HTML brand mark for headers / hero */
 function brand_html(string $variant = 'nav'): string
 {
