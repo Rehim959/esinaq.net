@@ -2,7 +2,12 @@
 
 declare(strict_types=1);
 
-define('BASE_PATH', dirname(__DIR__));
+// Shared hosting: works when docroot is /public OR when all files sit in public_html
+if (is_dir(__DIR__ . '/app')) {
+    define('BASE_PATH', __DIR__);
+} else {
+    define('BASE_PATH', dirname(__DIR__));
+}
 
 require BASE_PATH . '/app/bootstrap.php';
 

@@ -1,20 +1,30 @@
-# Safety net if document root is the project root (prefer public/ as docroot)
+# Safety net if document root is the project root
+DirectoryIndex index.php
+
 <IfModule mod_rewrite.c>
 RewriteEngine On
 
-# Never serve sensitive paths from project root
-RewriteRule ^(\.env|app/|database/|routes/|lang/|storage/|docker/|vendor/) - [F,L]
+# Never serve sensitive paths
+RewriteRule ^(app|database|routes|lang|storage)/ - [F,L]
 RewriteRule (^|/)\. - [F,L]
 RewriteRule \.(env|sql|log|lock)$ - [F,L]
 
-# If already under public/, stop
-RewriteRule ^public/ - [L]
-
-# Route everything through public/
+# Prefer public/ if present
+RewriteCond %{REQUEST_URI} !^/public/
+RewriteCond %{DOCUMENT_ROOT}/public/%{REQUEST_URI} -f
 RewriteRule ^(.*)$ public/$1 [L]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{DOCUMENT_ROOT}/public/index.php -f
+RewriteRule ^(.*)$ public/index.php [L,QSA]
+
+# Flat layout (no public/ folder)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [L]
 </IfModule>
 
-# Fallback deny for direct file access when rewrite is unavailable
 <FilesMatch "^\.env">
     <IfModule mod_authz_core.c>
         Require all denied

@@ -1,17 +1,32 @@
+# eSınaq.net — public_html root
+DirectoryIndex index.php index.html
+
+<IfModule mod_rewrite.c>
 RewriteEngine On
 
-# Force HTTPS in production (skip localhost / Docker)
+# Force HTTPS (skip localhost)
 RewriteCond %{HTTP_HOST} !^localhost [NC]
 RewriteCond %{HTTP_HOST} !^127\.0\.0\.1
 RewriteCond %{HTTPS} off
 RewriteCond %{HTTP:X-Forwarded-Proto} !https
 RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
-# Block hidden / sensitive files inside public
+# Block sensitive paths
 RewriteRule (^|/)\. - [F,L]
+RewriteRule ^(app|database|routes|lang|storage)/ - [F,L]
 RewriteRule \.(env|sql|log|lock)$ - [F,L]
-RewriteRule ^install\.php$ - [L]
 
+# Front controller
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^ index.php [L]
+</IfModule>
+
+<FilesMatch "^\.env">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Deny from all
+    </IfModule>
+</FilesMatch>

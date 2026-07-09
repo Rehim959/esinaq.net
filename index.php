@@ -1,6 +1,5 @@
 <?php
 /**
- * Fallback entry for shared hosting when document root cannot be set to /public.
- * Prefer pointing the domain document root to the /public folder.
+ * Fallback when domain document root is the project folder (not /public).
  */
 require __DIR__ . '/public/index.php';

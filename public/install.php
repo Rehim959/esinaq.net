@@ -5,7 +5,11 @@
  */
 declare(strict_types=1);
 
-define('BASE_PATH', dirname(__DIR__));
+if (is_dir(__DIR__ . '/app')) {
+    define('BASE_PATH', __DIR__);
+} else {
+    define('BASE_PATH', dirname(__DIR__));
+}
 require BASE_PATH . '/app/helpers.php';
 
 header('Content-Type: text/html; charset=utf-8');
