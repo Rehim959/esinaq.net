@@ -2,15 +2,20 @@
 $q = $questions[$currentIndex] ?? null;
 $total = count($questions);
 $csrf = \App\Core\Session::csrfToken();
+$submitUrl = url('/imtahan/' . $token . '/teslim/' . $session['id']);
 ?>
-<div class="exam-shell" data-session="<?= (int)$session['id'] ?>" data-token="<?= e($token) ?>" data-ends="<?= (int)$endsAt ?>">
+<div class="exam-shell"
+     data-session="<?= (int)$session['id'] ?>"
+     data-token="<?= e($token) ?>"
+     data-ends="<?= (int)$endsAt ?>"
+     data-submit-url="<?= e($submitUrl) ?>">
     <aside class="exam-left">
         <h3><?= e(__('answers')) ?></h3>
         <ul class="answered-list" id="answeredList">
             <?php foreach ($questions as $i => $item): ?>
                 <?php $sel = $answerMap[(int)$item['id']] ?? null; ?>
                 <?php if ($sel): ?>
-                    <li data-qi="<?= $i ?>"><?= $i + 1 ?>. <?= e($sel) ?></li>
+                    <li data-qi="<?= $i ?>"><a href="?q=<?= $i ?>"><?= $i + 1 ?>. <?= e($sel) ?></a></li>
                 <?php endif; ?>
             <?php endforeach; ?>
         </ul>
@@ -23,6 +28,10 @@ $csrf = \App\Core\Session::csrfToken();
                 <span class="muted"> · <?= e($child['first_name']) ?></span>
             </div>
             <div class="timer" id="timer"><?= gmdate('H:i:s', $remainingSeconds) ?></div>
+        </div>
+        <div class="time-alert" id="timeAlert" hidden>
+            <strong><?= e(__('time_warning')) ?></strong>
+            <span id="timeAlertText"><?= e(__('time_warning_min', ['n' => '15'])) ?></span>
         </div>
 
         <?php if ($q): ?>
@@ -54,7 +63,7 @@ $csrf = \App\Core\Session::csrfToken();
                     <?php if ($currentIndex < $total - 1): ?>
                         <a class="btn" href="?q=<?= $currentIndex + 1 ?>"><?= e(__('next')) ?> →</a>
                     <?php else: ?>
-                        <form method="post" action="<?= url('/imtahan/' . $token . '/teslim/' . $session['id']) ?>" onsubmit="return confirm(<?= json_encode(__('submit_confirm'), JSON_UNESCAPED_UNICODE) ?>)">
+                        <form method="post" action="<?= e($submitUrl) ?>" onsubmit="return confirm(<?= json_encode(__('submit_confirm'), JSON_UNESCAPED_UNICODE) ?>)">
                             <?= csrf_field() ?>
                             <button class="btn btn-danger" type="submit"><?= e(__('submit_exam')) ?></button>
                         </form>
@@ -73,9 +82,9 @@ $csrf = \App\Core\Session::csrfToken();
                 <a href="?q=<?= $i ?>" class="q-dot <?= $answered ? 'done' : '' ?> <?= $i === $currentIndex ? 'current' : '' ?>"><?= $i + 1 ?></a>
             <?php endforeach; ?>
         </div>
-        <form method="post" action="<?= url('/imtahan/' . $token . '/teslim/' . $session['id']) ?>" onsubmit="return confirm(<?= json_encode(__('submit_confirm'), JSON_UNESCAPED_UNICODE) ?>)">
+        <form method="post" id="autoSubmitForm" action="<?= e($submitUrl) ?>">
             <?= csrf_field() ?>
-            <button class="btn btn-block btn-danger" type="submit"><?= e(__('submit_exam')) ?></button>
+            <button class="btn btn-block btn-danger" type="submit" onclick="return confirm(<?= json_encode(__('submit_confirm'), JSON_UNESCAPED_UNICODE) ?>)"><?= e(__('submit_exam')) ?></button>
         </form>
     </aside>
 </div>
@@ -87,21 +96,49 @@ $csrf = \App\Core\Session::csrfToken();
     const endsAt = parseInt(shell.dataset.ends, 10) * 1000;
     const csrf = <?= json_encode($csrf) ?>;
     const answerUrl = <?= json_encode(url('/imtahan/' . $token . '/cavab/' . $session['id'])) ?>;
-    const resultUrl = <?= json_encode(url('/imtahan/' . $token . '/netice/' . $session['id'])) ?>;
     const minLabel = <?= json_encode(__('min_short'), JSON_UNESCAPED_UNICODE) ?>;
+    const warnTpl = <?= json_encode(__('time_warning_min', ['n' => '__N__']), JSON_UNESCAPED_UNICODE) ?>;
+    let submitted = false;
 
     function pad(n) { return String(n).padStart(2, '0'); }
+
+    function autoSubmit() {
+        if (submitted) return;
+        submitted = true;
+        const form = document.getElementById('autoSubmitForm');
+        if (form) form.submit();
+    }
+
     function tick() {
         const left = Math.max(0, Math.floor((endsAt - Date.now()) / 1000));
         const h = Math.floor(left / 3600);
         const m = Math.floor((left % 3600) / 60);
         const s = left % 60;
         const el = document.getElementById('timer');
-        if (el) el.textContent = pad(h) + ':' + pad(m) + ':' + pad(s);
         const side = document.getElementById('timerSide');
-        if (side) side.textContent = Math.ceil(left / 60) + ' ' + minLabel;
+        const alertBox = document.getElementById('timeAlert');
+        const alertText = document.getElementById('timeAlertText');
+
+        if (el) {
+            el.textContent = pad(h) + ':' + pad(m) + ':' + pad(s);
+            el.classList.toggle('timer-danger', left > 0 && left <= 900);
+        }
+        if (side) {
+            side.textContent = Math.ceil(left / 60) + ' ' + minLabel;
+            side.classList.toggle('timer-danger', left > 0 && left <= 900);
+        }
+        if (alertBox) {
+            if (left > 0 && left <= 900) {
+                alertBox.hidden = false;
+                if (alertText) {
+                    alertText.textContent = warnTpl.replace('__N__', String(Math.max(1, Math.ceil(left / 60))));
+                }
+            } else {
+                alertBox.hidden = true;
+            }
+        }
         if (left <= 0) {
-            window.location.href = resultUrl;
+            autoSubmit();
         }
     }
     tick();
@@ -120,7 +157,12 @@ $csrf = \App\Core\Session::csrfToken();
             fd.append('question_id', qid);
             fd.append('option', opt);
             try {
-                await fetch(answerUrl, { method: 'POST', body: fd, credentials: 'same-origin' });
+                const res = await fetch(answerUrl, { method: 'POST', body: fd, credentials: 'same-origin' });
+                const data = await res.json().catch(() => ({}));
+                if (data && data.error === 'timeout' && data.redirect) {
+                    window.location.href = data.redirect;
+                    return;
+                }
             } catch (e) {}
 
             const idx = parseInt(box.dataset.index, 10);
@@ -131,7 +173,7 @@ $csrf = \App\Core\Session::csrfToken();
                 li.dataset.qi = idx;
                 list.appendChild(li);
             }
-            li.textContent = (idx + 1) + '. ' + opt;
+            li.innerHTML = '<a href="?q=' + idx + '">' + (idx + 1) + '. ' + opt + '</a>';
 
             const dots = document.querySelectorAll('.q-dot');
             if (dots[idx]) dots[idx].classList.add('done');

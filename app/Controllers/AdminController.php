@@ -245,13 +245,20 @@ final class AdminController
         $title = trim((string) ($_POST['title'] ?? ''));
         $grade = (int) ($_POST['grade'] ?? 0);
         $sector = (string) ($_POST['sector'] ?? '');
-        $duration = max(5, (int) ($_POST['duration_minutes'] ?? 60));
-        $startsAt = trim((string) ($_POST['starts_at'] ?? '')) ?: null;
-        $endsAt = trim((string) ($_POST['ends_at'] ?? '')) ?: null;
+        $duration = max(5, min(300, (int) ($_POST['duration_minutes'] ?? 60)));
+        $startsAt = trim((string) ($_POST['starts_at'] ?? ''));
+        $endsAt = trim((string) ($_POST['ends_at'] ?? ''));
         $subjectIds = $_POST['subject_ids'] ?? [];
         $counts = $_POST['question_counts'] ?? [];
 
-        if ($title === '' || $grade < 1 || $grade > 11 || !in_array($sector, ['az', 'ru'], true) || !is_array($subjectIds) || $subjectIds === []) {
+        $startsAtSql = $startsAt !== '' ? date('Y-m-d H:i:s', strtotime(str_replace('T', ' ', $startsAt))) : null;
+        $endsAtSql = $endsAt !== '' ? date('Y-m-d H:i:s', strtotime(str_replace('T', ' ', $endsAt))) : null;
+
+        if (
+            $title === '' || $grade < 1 || $grade > 11 || !in_array($sector, ['az', 'ru'], true)
+            || !is_array($subjectIds) || $subjectIds === []
+            || !$startsAtSql || !$endsAtSql || strtotime($endsAtSql) <= strtotime($startsAtSql)
+        ) {
             Session::flash('error', __('err_exam_create'));
             redirect('/admin/imtahanlar/yeni');
         }
@@ -260,14 +267,14 @@ final class AdminController
         $pdo->prepare(
             'INSERT INTO exams (title, grade, sector, duration_minutes, starts_at, ends_at, status, created_by)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-        )->execute([$title, $grade, $sector, $duration, $startsAt, $endsAt, 'draft', Auth::adminId()]);
+        )->execute([$title, $grade, $sector, $duration, $startsAtSql, $endsAtSql, 'draft', Auth::adminId()]);
 
         $examId = (int) $pdo->lastInsertId();
         $ins = $pdo->prepare('INSERT INTO exam_subjects (exam_id, subject_id, question_count) VALUES (?, ?, ?)');
 
         foreach ($subjectIds as $sid) {
             $sid = (int) $sid;
-            $cnt = max(1, (int) ($counts[$sid] ?? 10));
+            $cnt = max(1, min(50, (int) ($counts[$sid] ?? 10)));
             $ins->execute([$examId, $sid, $cnt]);
         }
 
@@ -325,7 +332,18 @@ final class AdminController
             Session::flash('error', __('err_csrf_short'));
             redirect('/admin/imtahanlar');
         }
-        Database::connection()->prepare("UPDATE exams SET status = 'finished' WHERE id = ?")->execute([(int) $id]);
+        $examId = (int) $id;
+        $pdo = Database::connection();
+        $pdo->prepare("UPDATE exams SET status = 'finished' WHERE id = ?")->execute([$examId]);
+
+        // Auto-finalize any still in-progress sessions with their current answers
+        $open = $pdo->prepare("SELECT id FROM exam_sessions WHERE exam_id = ? AND status IN ('pending','in_progress')");
+        $open->execute([$examId]);
+        $service = new ExamService();
+        foreach ($open->fetchAll() as $row) {
+            $service->submit((int) $row['id'], 'timed_out');
+        }
+
         Session::flash('success', __('ok_exam_finished'));
         redirect('/admin/imtahanlar');
     }

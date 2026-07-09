@@ -129,12 +129,11 @@ function sector_label(string $sector): string
 function letter_grade(float $percentage): string
 {
     return match (true) {
-        $percentage >= 90 => 'A',
-        $percentage >= 80 => 'B',
-        $percentage >= 70 => 'C',
-        $percentage >= 60 => 'D',
-        $percentage >= 50 => 'E',
-        default => 'F',
+        $percentage >= 95 => 'A',
+        $percentage >= 85 => 'B',
+        $percentage >= 75 => 'C',
+        $percentage >= 65 => 'D',
+        default => 'E',
     };
 }
 

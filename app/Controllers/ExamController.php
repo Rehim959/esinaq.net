@@ -287,14 +287,24 @@ final class ExamController
         $pdo = Database::connection();
 
         $stmt = $pdo->prepare(
-            'SELECT es.*, e.title FROM exam_sessions es
+            'SELECT es.*, e.title, e.status AS exam_status, e.duration_minutes
+             FROM exam_sessions es
              JOIN exams e ON e.id = es.exam_id
              WHERE es.id = ? AND es.child_id = ?'
         );
         $stmt->execute([$sessionId, $child['id']]);
         $session = $stmt->fetch();
 
-        if (!$session || !in_array($session['status'], ['submitted', 'timed_out'], true)) {
+        if (!$session) {
+            redirect('/imtahan/' . $token . '/siyahi');
+        }
+
+        if ($session['status'] === 'in_progress' && $this->isSessionExpired($session)) {
+            (new ExamService())->submit($sessionId, 'timed_out');
+            redirect('/imtahan/' . $token . '/netice/' . $sessionId);
+        }
+
+        if (!in_array($session['status'], ['submitted', 'timed_out'], true)) {
             redirect('/imtahan/' . $token . '/siyahi');
         }
 
@@ -312,6 +322,8 @@ final class ExamController
             }
         }
 
+        $revealAnswers = ($session['exam_status'] ?? '') === 'finished';
+
         View::render('exam/result', [
             'title' => __('result'),
             'child' => $child,
@@ -321,7 +333,9 @@ final class ExamController
             'correct' => $correct,
             'wrong' => $wrong,
             'blank' => $blank,
+            'revealAnswers' => $revealAnswers,
             'message' => grade_message((string) $session['letter_grade']),
+            'band' => __('grade_band_' . strtoupper((string) $session['letter_grade'])),
         ], 'layouts/exam');
     }
 

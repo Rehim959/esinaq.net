@@ -172,7 +172,7 @@ final class ParentController
         $pdo = Database::connection();
 
         $stmt = $pdo->prepare(
-            'SELECT es.*, e.title, c.first_name, c.last_name, c.parent_id
+            'SELECT es.*, e.title, e.status AS exam_status, c.first_name, c.last_name, c.parent_id, c.id AS child_id
              FROM exam_sessions es
              JOIN exams e ON e.id = es.exam_id
              JOIN children c ON c.id = es.child_id
@@ -191,13 +191,20 @@ final class ParentController
             redirect('/valideyn/usaq/' . $session['child_id']);
         }
 
+        $revealAnswers = ($session['exam_status'] ?? '') === 'finished';
         $details = (new \App\Services\ExamService())->getResultDetails($sessionId);
-        $wrongOnly = array_values(array_filter($details, fn ($d) => $d['is_correct'] !== null && (int) $d['is_correct'] === 0));
+        $wrongOnly = [];
+        if ($revealAnswers) {
+            $wrongOnly = array_values(array_filter($details, fn ($d) => $d['is_correct'] !== null && (int) $d['is_correct'] === 0));
+        }
 
         View::render('parent/session_detail', [
-            'title' => __('wrong_questions'),
+            'title' => $revealAnswers ? __('wrong_questions') : __('result'),
             'session' => $session,
             'wrong' => $wrongOnly,
+            'revealAnswers' => $revealAnswers,
+            'message' => grade_message((string) ($session['letter_grade'] ?? 'E')),
+            'band' => __('grade_band_' . strtoupper((string) ($session['letter_grade'] ?? 'E'))),
         ], 'layouts/parent');
     }
 }
