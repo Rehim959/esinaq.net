@@ -1,6 +1,6 @@
 <div class="page">
-    <div class="form-card" style="margin-bottom:28px">
-        <h2 style="margin-top:0"><?= e(__('add_moderator')) ?></h2>
+    <div class="form-card team-add-card">
+        <h2 class="team-add-title"><?= e(__('add_moderator')) ?></h2>
         <form method="post" action="<?= url('/admin/komanda') ?>">
             <?= csrf_field() ?>
             <div class="grid-2">

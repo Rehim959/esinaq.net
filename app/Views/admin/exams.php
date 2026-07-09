@@ -20,7 +20,7 @@
                     <?php if ($e['status'] === 'running'): ?>
                         <form method="post" action="<?= url('/admin/imtahanlar/bitir/' . $e['id']) ?>" class="inline-form"><?= csrf_field() ?><button class="btn btn-sm btn-danger"><?= e(__('finish')) ?></button></form>
                     <?php elseif (in_array($e['status'], ['finished', 'cancelled'], true)): ?>
-                        <form method="post" action="<?= url('/admin/imtahanlar/yeniden/' . $e['id']) ?>" class="inline-form" onsubmit="return confirm(<?= json_encode(__('confirm_rerun_exam'), JSON_UNESCAPED_UNICODE) ?>)">
+                        <form method="post" action="<?= url('/admin/imtahanlar/yeniden/' . $e['id']) ?>" class="inline-form" data-confirm="<?= e(__('confirm_rerun_exam')) ?>">
                             <?= csrf_field() ?>
                             <button class="btn btn-sm"><?= e(__('rerun_exam')) ?></button>
                         </form>
@@ -29,7 +29,7 @@
                     <?php endif; ?>
                     <a class="btn btn-sm btn-ghost" href="<?= url('/admin/imtahanlar/monitor/' . $e['id']) ?>"><?= e(__('monitor')) ?></a>
                     <?php if (\App\Core\Auth::isSuperAdmin()): ?>
-                        <form method="post" action="<?= url('/admin/imtahanlar/sil/' . $e['id']) ?>" class="inline-form" onsubmit="return confirm(<?= json_encode(__('confirm_delete_exam'), JSON_UNESCAPED_UNICODE) ?>)">
+                        <form method="post" action="<?= url('/admin/imtahanlar/sil/' . $e['id']) ?>" class="inline-form" data-confirm="<?= e(__('confirm_delete_exam')) ?>">
                             <?= csrf_field() ?>
                             <button class="btn btn-sm btn-danger" type="submit"><?= e(__('delete_exam')) ?></button>
                         </form>

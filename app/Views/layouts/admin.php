@@ -42,5 +42,6 @@
     <?php endif; ?>
     <?= $content ?>
 </div>
+<script src="<?= asset('js/confirm.js') ?>" nonce="<?= e(csp_nonce()) ?>"></script>
 </body>
 </html>

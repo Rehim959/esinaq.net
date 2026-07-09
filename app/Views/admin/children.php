@@ -37,7 +37,7 @@
                         <button class="btn btn-sm" type="submit"><?= e(__('reset_password_btn')) ?></button>
                     </form>
                     <?php if (\App\Core\Auth::isSuperAdmin()): ?>
-                    <form method="post" action="<?= url('/admin/usaq/sil/' . $c['id']) ?>" class="inline-form" onsubmit="return confirm(<?= json_encode(__('confirm_delete_child'), JSON_UNESCAPED_UNICODE) ?>)">
+                    <form method="post" action="<?= url('/admin/usaq/sil/' . $c['id']) ?>" class="inline-form" data-confirm="<?= e(__('confirm_delete_child')) ?>">
                         <?= csrf_field() ?>
                         <button class="btn btn-sm btn-danger" type="submit"><?= e(__('delete')) ?></button>
                     </form>

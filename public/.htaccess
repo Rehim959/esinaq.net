@@ -5,12 +5,16 @@ DirectoryIndex index.php index.html
 RewriteEngine On
 RewriteBase /
 
-# Force HTTPS (skip localhost)
+# 1) Same-host HTTP → HTTPS first (Observatory)
 RewriteCond %{HTTP_HOST} !^localhost [NC]
 RewriteCond %{HTTP_HOST} !^127\.0\.0\.1
 RewriteCond %{HTTPS} off
 RewriteCond %{HTTP:X-Forwarded-Proto} !https
-RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# 2) Then apex → www on HTTPS
+RewriteCond %{HTTP_HOST} ^esinaq\.net$ [NC]
+RewriteRule ^ https://www.esinaq.net%{REQUEST_URI} [L,R=301]
 
 # Block sensitive paths
 RewriteRule (^|/)\. - [F,L]

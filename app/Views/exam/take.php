@@ -88,7 +88,7 @@ $unfinishedList = array_keys($unfinishedSubjects);
                     <?php endforeach; ?>
                 </div>
                 <div class="exam-nav">
-                    <a class="btn btn-ghost" href="<?= e($qUrl(max(0, $currentIndex - 1))) ?>" <?= $currentIndex === 0 ? 'style="visibility:hidden"' : '' ?>>← <?= e(__('previous')) ?></a>
+                    <a class="btn btn-ghost<?= $currentIndex === 0 ? ' is-invisible' : '' ?>" href="<?= e($qUrl(max(0, $currentIndex - 1))) ?>">← <?= e(__('previous')) ?></a>
                     <a class="btn btn-ghost" href="<?= e($qUrl(min($total - 1, $currentIndex + 1))) ?>"><?= e(__('skip')) ?></a>
                     <?php if ($currentIndex < $total - 1): ?>
                         <a class="btn" href="<?= e($qUrl($currentIndex + 1)) ?>"><?= e(__('next')) ?> →</a>
@@ -133,156 +133,22 @@ $unfinishedList = array_keys($unfinishedSubjects);
     </aside>
 </div>
 
-<script>
-(function () {
-    const shell = document.querySelector('.exam-shell');
-    if (!shell) return;
-    const endsAt = parseInt(shell.dataset.ends, 10) * 1000;
-    const csrf = <?= json_encode($csrf) ?>;
-    const answerUrl = <?= json_encode(url('/imtahan/' . $token . '/cavab/' . $session['id'])) ?>;
-    const qUrls = <?= json_encode(array_map(static fn ($i) => $qUrl($i), array_keys($questions)), JSON_UNESCAPED_UNICODE) ?>;
-    const subjectByIndex = <?= json_encode(array_map(static function ($item) {
+<?php
+$examTakeConfig = [
+    'csrf' => $csrf,
+    'answerUrl' => url('/imtahan/' . $token . '/cavab/' . $session['id']),
+    'qUrls' => array_map(static fn ($i) => $qUrl($i), array_keys($questions)),
+    'subjectByIndex' => array_map(static function ($item) {
         return locale() === 'ru'
             ? (string) ($item['subject_name_ru'] ?? $item['subject_name'] ?? '')
             : (string) ($item['subject_name'] ?? '');
-    }, $questions), JSON_UNESCAPED_UNICODE) ?>;
-    const minLabel = <?= json_encode(__('min_short'), JSON_UNESCAPED_UNICODE) ?>;
-    const warnTpl = <?= json_encode(__('time_warning_min', ['n' => '__N__']), JSON_UNESCAPED_UNICODE) ?>;
-    const submitConfirm = <?= json_encode(__('submit_confirm'), JSON_UNESCAPED_UNICODE) ?>;
-    const subjectsLeftConfirm = <?= json_encode(__('subjects_left_confirm', ['list' => '__LIST__']), JSON_UNESCAPED_UNICODE) ?>;
-    let submitted = false;
-    const answered = {};
-    <?php foreach ($answerMap as $qid => $sel): ?>
-    answered[<?= (int)$qid ?>] = <?= json_encode((string)$sel) ?>;
-    <?php endforeach; ?>
-
-    function pad(n) { return String(n).padStart(2, '0'); }
-
-    function unfinishedSubjects() {
-        const left = {};
-        Object.keys(subjectByIndex).forEach(function (i) {
-            const idx = parseInt(i, 10);
-            const dot = document.querySelector('.q-dot[data-qi="' + idx + '"]');
-            if (!dot || !dot.classList.contains('done')) {
-                left[subjectByIndex[idx]] = true;
-            }
-        });
-        return Object.keys(left).filter(Boolean);
-    }
-
-    function refreshUnfinishedHint() {
-        const list = unfinishedSubjects();
-        const hint = document.getElementById('unfinishedHint');
-        const names = document.getElementById('unfinishedNames');
-        if (!hint || !names) return;
-        if (list.length === 0) {
-            hint.hidden = true;
-            names.textContent = '';
-        } else {
-            hint.hidden = false;
-            names.textContent = list.join(', ');
-        }
-    }
-
-    function confirmSubmit() {
-        const left = unfinishedSubjects();
-        if (left.length > 0) {
-            const msg = subjectsLeftConfirm.replace('__LIST__', left.join(', '));
-            return window.confirm(msg);
-        }
-        return window.confirm(submitConfirm);
-    }
-
-    function autoSubmit() {
-        if (submitted) return;
-        submitted = true;
-        const form = document.getElementById('autoSubmitForm');
-        if (form) form.submit();
-    }
-
-    function tick() {
-        const left = Math.max(0, Math.floor((endsAt - Date.now()) / 1000));
-        const h = Math.floor(left / 3600);
-        const m = Math.floor((left % 3600) / 60);
-        const s = left % 60;
-        const el = document.getElementById('timer');
-        const side = document.getElementById('timerSide');
-        const alertBox = document.getElementById('timeAlert');
-        const alertText = document.getElementById('timeAlertText');
-
-        if (el) {
-            el.textContent = pad(h) + ':' + pad(m) + ':' + pad(s);
-            el.classList.toggle('timer-danger', left > 0 && left <= 900);
-        }
-        if (side) {
-            side.textContent = Math.ceil(left / 60) + ' ' + minLabel;
-            side.classList.toggle('timer-danger', left > 0 && left <= 900);
-        }
-        if (alertBox) {
-            if (left > 0 && left <= 900) {
-                alertBox.hidden = false;
-                if (alertText) {
-                    alertText.textContent = warnTpl.replace('__N__', String(Math.max(1, Math.ceil(left / 60))));
-                }
-            } else {
-                alertBox.hidden = true;
-            }
-        }
-        if (left <= 0) {
-            autoSubmit();
-        }
-    }
-    tick();
-    setInterval(tick, 1000);
-
-    document.querySelectorAll('.js-submit-exam').forEach(function (form) {
-        form.addEventListener('submit', function (e) {
-            if (submitted) return;
-            if (!confirmSubmit()) {
-                e.preventDefault();
-                return;
-            }
-            submitted = true;
-        });
-    });
-
-    document.querySelectorAll('.option').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            const box = document.getElementById('questionBox');
-            const qid = box.dataset.qid;
-            const opt = btn.dataset.opt;
-            document.querySelectorAll('.option').forEach(b => b.classList.remove('selected'));
-            btn.classList.add('selected');
-
-            const fd = new FormData();
-            fd.append('_csrf', csrf);
-            fd.append('question_id', qid);
-            fd.append('option', opt);
-            try {
-                const res = await fetch(answerUrl, { method: 'POST', body: fd, credentials: 'same-origin' });
-                const data = await res.json().catch(() => ({}));
-                if (data && data.error === 'timeout' && data.redirect) {
-                    window.location.href = data.redirect;
-                    return;
-                }
-            } catch (e) {}
-
-            const idx = parseInt(box.dataset.index, 10);
-            answered[qid] = opt;
-            const list = document.getElementById('answeredList');
-            let li = list.querySelector('[data-qi="' + idx + '"]');
-            if (!li) {
-                li = document.createElement('li');
-                li.dataset.qi = idx;
-                list.appendChild(li);
-            }
-            const href = qUrls[idx] || ('?q=' + idx);
-            li.innerHTML = '<a href="' + href + '">' + (idx + 1) + '. ' + opt + '</a>';
-
-            const dot = document.querySelector('.q-dot[data-qi="' + idx + '"]');
-            if (dot) dot.classList.add('done');
-            refreshUnfinishedHint();
-        });
-    });
-})();
-</script>
+    }, $questions),
+    'minLabel' => __('min_short'),
+    'warnTpl' => __('time_warning_min', ['n' => '__N__']),
+    'submitConfirm' => __('submit_confirm'),
+    'subjectsLeftConfirm' => __('subjects_left_confirm', ['list' => '__LIST__']),
+    'answered' => $answerMap,
+];
+?>
+<script type="application/json" id="examTakeConfig" nonce="<?= e(csp_nonce()) ?>"><?= json_encode($examTakeConfig, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS) ?></script>
+<script src="<?= asset('js/exam-take.js') ?>" nonce="<?= e(csp_nonce()) ?>"></script>

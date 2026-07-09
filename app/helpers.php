@@ -104,16 +104,27 @@ function app_base_url(): string
 {
     $configured = rtrim((string) env('APP_URL', ''), '/');
     if ($configured !== '' && !preg_match('#^https?://localhost#i', $configured) && !str_contains($configured, '127.0.0.1')) {
+        // Always prefer HTTPS in production URLs
+        if (str_starts_with($configured, 'http://')) {
+            $configured = 'https://' . substr($configured, 7);
+        }
         return $configured;
     }
 
-    $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-        || strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
-    $host = (string) ($_SERVER['HTTP_HOST'] ?? 'esinaq.net');
+    $https = \App\Core\Security::isHttps() || !\App\Core\Security::isLocalHost();
+    $host = (string) ($_SERVER['HTTP_HOST'] ?? 'www.esinaq.net');
     if ($host === '' || str_starts_with($host, 'localhost') || str_starts_with($host, '127.0.0.1')) {
         $host = 'www.esinaq.net';
     }
+    if (strcasecmp($host, 'esinaq.net') === 0) {
+        $host = 'www.esinaq.net';
+    }
     return ($https ? 'https' : 'http') . '://' . $host;
+}
+
+function csp_nonce(): string
+{
+    return \App\Core\Security::cspNonce();
 }
 
 function redirect(string $path): void

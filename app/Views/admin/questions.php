@@ -36,7 +36,7 @@
                 <td><?= e(strtoupper($q['sector'])) ?></td>
                 <td><strong><?= e($q['correct_option']) ?></strong></td>
                 <td>
-                    <form method="post" action="<?= url('/admin/suallar/sil/' . $q['id']) ?>" onsubmit="return confirm(<?= json_encode(__('confirm_delete'), JSON_UNESCAPED_UNICODE) ?>)">
+                    <form method="post" action="<?= url('/admin/suallar/sil/' . $q['id']) ?>" data-confirm="<?= e(__('confirm_delete')) ?>">
                         <?= csrf_field() ?>
                         <button type="submit" class="link-btn danger"><?= e(__('delete')) ?></button>
                     </form>

@@ -23,7 +23,7 @@
                 <td class="actions-cell">
                     <a class="btn btn-sm btn-ghost" href="<?= url('/admin/valideyn/' . $p['id']) ?>"><?= e(__('view_details')) ?></a>
                     <?php if (\App\Core\Auth::isSuperAdmin()): ?>
-                    <form method="post" action="<?= url('/admin/valideyn/sil/' . $p['id']) ?>" class="inline-form" onsubmit="return confirm(<?= json_encode(__('confirm_delete_parent'), JSON_UNESCAPED_UNICODE) ?>)">
+                    <form method="post" action="<?= url('/admin/valideyn/sil/' . $p['id']) ?>" class="inline-form" data-confirm="<?= e(__('confirm_delete_parent')) ?>">
                         <?= csrf_field() ?>
                         <button type="submit" class="btn btn-sm btn-danger"><?= e(__('delete')) ?></button>
                     </form>

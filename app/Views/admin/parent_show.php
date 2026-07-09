@@ -26,7 +26,7 @@
         <section class="form-card danger-zone">
             <h2><?= e(__('delete_parent')) ?></h2>
             <p class="muted"><?= e(__('delete_parent_help')) ?></p>
-            <form method="post" action="<?= url('/admin/valideyn/sil/' . $parent['id']) ?>" onsubmit="return confirm(<?= json_encode(__('confirm_delete_parent'), JSON_UNESCAPED_UNICODE) ?>)">
+            <form method="post" action="<?= url('/admin/valideyn/sil/' . $parent['id']) ?>" data-confirm="<?= e(__('confirm_delete_parent')) ?>">
                 <?= csrf_field() ?>
                 <button class="btn btn-danger" type="submit"><?= e(__('delete')) ?></button>
             </form>
@@ -69,7 +69,7 @@
                             <button class="btn btn-sm" type="submit"><?= e(__('reset_password_btn')) ?></button>
                         </form>
                         <?php if (\App\Core\Auth::isSuperAdmin()): ?>
-                        <form method="post" action="<?= url('/admin/usaq/sil/' . $c['id']) ?>" class="inline-form" onsubmit="return confirm(<?= json_encode(__('confirm_delete_child'), JSON_UNESCAPED_UNICODE) ?>)">
+                        <form method="post" action="<?= url('/admin/usaq/sil/' . $c['id']) ?>" class="inline-form" data-confirm="<?= e(__('confirm_delete_child')) ?>">
                             <?= csrf_field() ?>
                             <input type="hidden" name="back" value="parent">
                             <button class="btn btn-sm btn-danger" type="submit"><?= e(__('delete')) ?></button>
