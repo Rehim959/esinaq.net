@@ -1,6 +1,5 @@
 # eSınaq.net — public_html root
 DirectoryIndex index.php index.html
-AcceptPathInfo On
 
 <IfModule mod_rewrite.c>
 RewriteEngine On

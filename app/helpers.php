@@ -116,7 +116,7 @@ function app_base_url(): string
     return ($https ? 'https' : 'http') . '://' . $host;
 }
 
-function redirect(string $path): never
+function redirect(string $path): void
 {
     // Only allow relative app paths — block open redirects
     $safe = \App\Core\Security::safeRedirectPath($path);
@@ -125,8 +125,9 @@ function redirect(string $path): never
 }
 
 /**
- * Build app URLs. Uses /index.php/... so shared hosting works
- * even when Apache mod_rewrite / AllowOverride is disabled.
+ * Build app URLs.
+ * Uses /index.php?r=/path so nginx/Apache shared hosting works
+ * without mod_rewrite and without PATH_INFO.
  */
 function url(string $path = ''): string
 {
@@ -135,14 +136,17 @@ function url(string $path = ''): string
         return app_base_url() . '/';
     }
 
-    // Keep query string if present (e.g. /sifre-berpa?token=...)
-    $query = '';
+    // Keep extra query string if present (e.g. /sifre-berpa?token=...)
+    $extra = '';
     if (str_contains($path, '?')) {
-        [$path, $query] = explode('?', $path, 2);
-        $query = '?' . $query;
+        [$path, $extra] = explode('?', $path, 2);
     }
 
-    return app_base_url() . '/index.php' . $path . $query;
+    $out = app_base_url() . '/index.php?r=' . rawurlencode($path);
+    if ($extra !== '') {
+        $out .= '&' . $extra;
+    }
+    return $out;
 }
 
 function asset(string $path): string
@@ -151,7 +155,7 @@ function asset(string $path): string
     return app_base_url() . '/assets/' . ltrim($path, '/');
 }
 
-/** Resolve current request path for the router (pretty URL, PATH_INFO, or ?r=). */
+/** Resolve current request path for the router (pretty URL or ?r=). */
 function request_path(): string
 {
     if (isset($_GET['r']) && is_string($_GET['r']) && $_GET['r'] !== '') {
@@ -159,20 +163,12 @@ function request_path(): string
         return $path === '/' ? '/' : rtrim($path, '/');
     }
 
-    if (!empty($_SERVER['PATH_INFO'])) {
-        $path = '/' . trim((string) $_SERVER['PATH_INFO'], '/');
-        return $path === '/' ? '/' : rtrim($path, '/') ?: '/';
-    }
-
     $uri = (string) ($_SERVER['REQUEST_URI'] ?? '/');
     $path = parse_url($uri, PHP_URL_PATH) ?: '/';
 
-    // /index.php/dil/az  or  /index.php
-    if (preg_match('#/index\.php(/.*)?$#', $path, $m)) {
-        $path = $m[1] ?? '/';
-        if ($path === '' || $path === false) {
-            $path = '/';
-        }
+    // Strip /index.php if present
+    if (preg_match('#/index\.php$#', $path)) {
+        $path = '/';
     }
 
     $path = '/' . trim($path, '/');
