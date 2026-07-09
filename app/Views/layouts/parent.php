@@ -33,6 +33,7 @@
     <?php endif; ?>
     <?= $content ?>
 </div>
+<script src="<?= asset('js/bars.js') ?>" nonce="<?= e(csp_nonce()) ?>"></script>
 </body>
 </html>
 

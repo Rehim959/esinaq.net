@@ -16,7 +16,7 @@
             <?php foreach ($weakSubjects as $w): ?>
                 <div class="bar-row">
                     <span><?= e(locale() === 'ru' ? ($w['name_ru'] ?? $w['name_az']) : $w['name_az']) ?></span>
-                    <div class="bar-track"><div class="bar-fill" style="width:<?= min(100, (float)$w['avg_pct']) ?>%"></div></div>
+                    <div class="bar-track"><div class="bar-fill" data-pct="<?= e((string)min(100, (float)$w['avg_pct'])) ?>"></div></div>
                     <strong><?= number_format((float)$w['avg_pct'], 0) ?>%</strong>
                 </div>
             <?php endforeach; ?>
@@ -29,7 +29,7 @@
             <?php foreach ($monthly as $m): ?>
                 <div class="bar-row">
                     <span><?= e($m['ym']) ?></span>
-                    <div class="bar-track"><div class="bar-fill" style="width:<?= min(100, (float)$m['avg_pct']) ?>%"></div></div>
+                    <div class="bar-track"><div class="bar-fill" data-pct="<?= e((string)min(100, (float)$m['avg_pct'])) ?>"></div></div>
                     <strong><?= number_format((float)$m['avg_pct'], 0) ?>%</strong>
                 </div>
             <?php endforeach; ?>

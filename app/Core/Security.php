@@ -125,7 +125,7 @@ final class Security
             . "frame-ancestors 'self'; "
             . "img-src 'self' data:; "
             . "font-src 'self' https://fonts.gstatic.com; "
-            . "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            . "style-src 'self' https://fonts.googleapis.com; "
             . "script-src 'self' 'nonce-{$nonce}'; "
             . "connect-src 'self'"
         );
