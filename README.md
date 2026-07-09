@@ -44,13 +44,17 @@ git push -u origin main
 ## azhosting.az-a deploy
 
 1. GitHub-dan clone edin və ya FTP ilə faylları yükləyin.
-2. Mümkünsə domain **Document Root** = `public/` qovluğu.
-3. `.env.example` → `.env` kopyalayın, DB və SMTP yazın.
-4. Brauzerdə `https://esinaq.net/install.php` açın → quraşdırın → **install.php silin**.
-5. E-poçt: `esinaq@esinaq.net` SMTP məlumatlarını `.env`-ə yazın.
+2. Domain **Document Root** = `public/` qovluğu (vacib!).
+3. `.env.example` → `.env` kopyalayın: DB, SMTP, **güclü** `ADMIN_PASSWORD`, `APP_SECRET`, `INSTALL_TOKEN`.
+4. Brauzerdə `https://esinaq.net/install.php?token=YOUR_INSTALL_TOKEN` açın → quraşdırın.
+5. **Dərhal** `public/install.php` silin (və `storage/install.lock` qalsın).
+6. Admin paneldə şifrəni dəyişin / güclü saxlayın.
 
 ```env
 APP_URL=https://esinaq.net
+APP_DEBUG=false
+INSTALL_TOKEN=uzun_tesadufi_token
+ADMIN_PASSWORD=GüclüUnikalŞifrə!
 DB_HOST=localhost
 DB_NAME=...
 DB_USER=...
@@ -61,9 +65,15 @@ MAIL_USER=esinaq@esinaq.net
 MAIL_PASS=...
 MAIL_ENCRYPTION=tls
 MAIL_FROM=esinaq@esinaq.net
-ADMIN_PASSWORD=GüclüŞifrə123!
 ```
 
+### Təhlükəsizlik (deploy sonrası)
+
+- Document root yalnız `public/` olmalıdır — `.env` heç vaxt web-dən oxunmamalıdır
+- `install.php` silinməlidir
+- `APP_DEBUG=false`
+- Admin şifrəsi `Admin123!` olmamalıdır
+- `storage/` yazıla bilən olmalıdır (rate limit + install.lock)
 ## Sual formatı (admin copy-paste)
 
 ```

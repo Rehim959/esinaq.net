@@ -31,9 +31,9 @@ final class HomeController
         Lang::setLocale($locale);
 
         $back = $_GET['back'] ?? '/';
-        if (!is_string($back) || !str_starts_with($back, '/') || str_starts_with($back, '//') || str_contains($back, '://')) {
+        if (!is_string($back)) {
             $back = '/';
         }
-        redirect($back);
+        redirect(\App\Core\Security::safeRedirectPath($back));
     }
 }

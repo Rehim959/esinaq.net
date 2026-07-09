@@ -26,28 +26,23 @@ foreach (['DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_USER', 'DB_PASS', 'MAIL_HOST', 'M
     }
 }
 
-\date_default_timezone_set('Asia/Baku');
+date_default_timezone_set('Asia/Baku');
 
+\App\Core\Security::sendHeaders();
 \App\Core\Session::start();
 \App\Core\Lang::boot();
 
-// Ensure admin exists with correct password on first boot
+// Ensure admin exists on first boot (create only — never auto-reset password in production)
 try {
     $pdo = \App\Core\Database::connection();
     $adminEmail = (string) env('ADMIN_EMAIL', 'admin@esinaq.net');
-    $adminPass = (string) env('ADMIN_PASSWORD', 'Admin123!');
-    $stmt = $pdo->prepare('SELECT id, password_hash FROM admins WHERE email = ?');
+    $adminPass = (string) env('ADMIN_PASSWORD', '');
+    $stmt = $pdo->prepare('SELECT id FROM admins WHERE email = ?');
     $stmt->execute([$adminEmail]);
     $admin = $stmt->fetch();
-    if (!$admin) {
+    if (!$admin && $adminPass !== '' && $adminPass !== 'CHANGE_ME') {
         $pdo->prepare('INSERT INTO admins (email, password_hash, full_name) VALUES (?, ?, ?)')
             ->execute([$adminEmail, password_hash($adminPass, PASSWORD_DEFAULT), 'Sistem Administratoru']);
-    } elseif (!password_verify($adminPass, $admin['password_hash'])) {
-        // Only auto-fix in local when hash is placeholder/broken
-        if (env('APP_ENV') === 'local') {
-            $pdo->prepare('UPDATE admins SET password_hash = ? WHERE id = ?')
-                ->execute([password_hash($adminPass, PASSWORD_DEFAULT), $admin['id']]);
-        }
     }
 
     // Ensure subjects exist
@@ -67,6 +62,13 @@ try {
         foreach ($subjects as $s) {
             $ins->execute($s);
         }
+    }
+
+    // Widen password_hint for bcrypt hashes (safe if already applied)
+    try {
+        $pdo->exec('ALTER TABLE children MODIFY password_hint VARCHAR(255) NOT NULL');
+    } catch (\Throwable) {
+        // ignore if no permission / already correct
     }
 } catch (\Throwable) {
     // DB may not be ready yet during first docker boot

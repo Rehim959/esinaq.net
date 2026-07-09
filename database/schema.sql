@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS children (
     sector ENUM('az','ru') NOT NULL,
     gender ENUM('boy','girl') NOT NULL,
     access_token VARCHAR(64) NOT NULL UNIQUE,
-    password_hint VARCHAR(50) NOT NULL COMMENT 'Ad + doğum ili, məs: Samir2015',
+    password_hint VARCHAR(255) NOT NULL COMMENT 'bcrypt hash of Ad+doğum ili',
     is_active TINYINT(1) NOT NULL DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_children_parent FOREIGN KEY (parent_id) REFERENCES parents(id) ON DELETE CASCADE,

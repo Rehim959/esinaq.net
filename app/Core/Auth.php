@@ -16,11 +16,16 @@ final class Auth
             return false;
         }
 
+        Session::regenerate();
         Session::set('admin_id', (int) $admin['id']);
         Session::set('admin_name', $admin['full_name']);
         Session::set('admin_email', $admin['email']);
         Session::remove('parent_id');
         Session::remove('child_id');
+        Session::remove('child_token');
+        Session::remove('child_name');
+        Session::remove('parent_name');
+        Session::remove('parent_email');
         return true;
     }
 
@@ -34,11 +39,16 @@ final class Auth
             return false;
         }
 
+        Session::regenerate();
         Session::set('parent_id', (int) $parent['id']);
         Session::set('parent_name', $parent['first_name'] . ' ' . $parent['last_name']);
         Session::set('parent_email', $parent['email']);
         Session::remove('admin_id');
+        Session::remove('admin_name');
+        Session::remove('admin_email');
         Session::remove('child_id');
+        Session::remove('child_token');
+        Session::remove('child_name');
         return true;
     }
 
@@ -52,15 +62,37 @@ final class Auth
             return null;
         }
 
-        if (!hash_equals(mb_strtolower($child['password_hint']), mb_strtolower(trim($password)))) {
+        $stored = (string) $child['password_hint'];
+        $ok = false;
+
+        // Prefer hashed passwords; keep legacy plaintext hints for existing rows.
+        if (str_starts_with($stored, '$2y$') || str_starts_with($stored, '$argon2')) {
+            $ok = password_verify($password, $stored);
+        } else {
+            $ok = hash_equals(mb_strtolower($stored), mb_strtolower(trim($password)));
+            if ($ok) {
+                // Upgrade legacy plaintext to hash on successful login
+                $hash = password_hash(trim($password), PASSWORD_DEFAULT);
+                Database::connection()->prepare('UPDATE children SET password_hint = ? WHERE id = ?')
+                    ->execute([$hash, $child['id']]);
+                $child['password_hint'] = $hash;
+            }
+        }
+
+        if (!$ok) {
             return null;
         }
 
+        Session::regenerate();
         Session::set('child_id', (int) $child['id']);
         Session::set('child_token', $token);
         Session::set('child_name', $child['first_name']);
         Session::remove('admin_id');
+        Session::remove('admin_name');
+        Session::remove('admin_email');
         Session::remove('parent_id');
+        Session::remove('parent_name');
+        Session::remove('parent_email');
         return $child;
     }
 

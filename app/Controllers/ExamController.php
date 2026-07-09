@@ -6,6 +6,7 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\Database;
+use App\Core\RateLimiter;
 use App\Core\Session;
 use App\Core\View;
 use App\Services\ExamService;
@@ -43,14 +44,23 @@ final class ExamController
             redirect('/imtahan/' . $token);
         }
 
+        $rateKey = RateLimiter::clientKey('exam_login:' . substr(hash('sha256', $token), 0, 16));
+        if (RateLimiter::tooManyAttempts($rateKey, 8, 900)) {
+            $wait = RateLimiter::availableIn($rateKey, 900);
+            Session::flash('error', __('err_rate_limit', ['n' => (string) max(1, (int) ceil($wait / 60))]));
+            redirect('/imtahan/' . $token);
+        }
+
         $password = (string) ($_POST['password'] ?? '');
         $child = Auth::attemptChild($token, $password);
 
         if (!$child) {
+            RateLimiter::hit($rateKey, 900);
             Session::flash('error', __('err_child_password'));
             redirect('/imtahan/' . $token);
         }
 
+        RateLimiter::clear($rateKey);
         redirect('/imtahan/' . $token . '/siyahi');
     }
 
@@ -69,6 +79,8 @@ final class ExamController
              WHERE e.status = 'running'
                AND e.grade = ?
                AND e.sector = ?
+               AND (e.starts_at IS NULL OR e.starts_at <= NOW())
+               AND (e.ends_at IS NULL OR e.ends_at >= NOW())
              ORDER BY e.id DESC"
         );
         $exams->execute([
@@ -94,7 +106,11 @@ final class ExamController
         $examId = (int) $examId;
         $pdo = Database::connection();
 
-        $exam = $pdo->prepare("SELECT * FROM exams WHERE id = ? AND status = 'running' AND grade = ? AND sector = ?");
+        $exam = $pdo->prepare(
+            "SELECT * FROM exams WHERE id = ? AND status = 'running' AND grade = ? AND sector = ?
+             AND (starts_at IS NULL OR starts_at <= NOW())
+             AND (ends_at IS NULL OR ends_at >= NOW())"
+        );
         $exam->execute([$examId, $child['grade'], $child['sector']]);
         $examRow = $exam->fetch();
 
@@ -186,12 +202,23 @@ final class ExamController
 
         $sessionId = (int) $sessionId;
         $pdo = Database::connection();
-        $stmt = $pdo->prepare('SELECT * FROM exam_sessions WHERE id = ? AND child_id = ? AND status = ?');
+        $stmt = $pdo->prepare(
+            'SELECT es.*, e.duration_minutes
+             FROM exam_sessions es
+             JOIN exams e ON e.id = es.exam_id
+             WHERE es.id = ? AND es.child_id = ? AND es.status = ?'
+        );
         $stmt->execute([$sessionId, $child['id'], 'in_progress']);
         $session = $stmt->fetch();
 
         if (!$session) {
             View::json(['ok' => false, 'error' => 'session'], 400);
+            return;
+        }
+
+        if ($this->isSessionExpired($session)) {
+            (new ExamService())->submit($sessionId, 'timed_out');
+            View::json(['ok' => false, 'error' => 'timeout', 'redirect' => url('/imtahan/' . $token . '/netice/' . $sessionId)], 400);
             return;
         }
 
@@ -226,7 +253,12 @@ final class ExamController
 
         $sessionId = (int) $sessionId;
         $pdo = Database::connection();
-        $stmt = $pdo->prepare('SELECT * FROM exam_sessions WHERE id = ? AND child_id = ?');
+        $stmt = $pdo->prepare(
+            'SELECT es.*, e.duration_minutes
+             FROM exam_sessions es
+             JOIN exams e ON e.id = es.exam_id
+             WHERE es.id = ? AND es.child_id = ?'
+        );
         $stmt->execute([$sessionId, $child['id']]);
         $session = $stmt->fetch();
 
@@ -234,7 +266,17 @@ final class ExamController
             redirect('/imtahan/' . $token . '/siyahi');
         }
 
-        (new ExamService())->submit($sessionId, 'submitted');
+        if (in_array($session['status'], ['submitted', 'timed_out'], true)) {
+            redirect('/imtahan/' . $token . '/netice/' . $sessionId);
+        }
+
+        if ($session['status'] !== 'in_progress') {
+            Session::flash('error', __('err_exam_not_found'));
+            redirect('/imtahan/' . $token . '/siyahi');
+        }
+
+        $status = $this->isSessionExpired($session) ? 'timed_out' : 'submitted';
+        (new ExamService())->submit($sessionId, $status);
         redirect('/imtahan/' . $token . '/netice/' . $sessionId);
     }
 
@@ -300,5 +342,19 @@ final class ExamController
         }
 
         return $child;
+    }
+
+    /** @param array<string,mixed> $session */
+    private function isSessionExpired(array $session): bool
+    {
+        if (empty($session['started_at'])) {
+            return false;
+        }
+        $started = strtotime((string) $session['started_at']);
+        if ($started === false) {
+            return false;
+        }
+        $endsAt = $started + ((int) ($session['duration_minutes'] ?? 0) * 60);
+        return time() >= $endsAt;
     }
 }

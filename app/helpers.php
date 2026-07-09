@@ -57,7 +57,9 @@ function e(?string $value): string
 
 function redirect(string $path): never
 {
-    $url = str_starts_with($path, 'http') ? $path : rtrim((string) env('APP_URL', ''), '/') . $path;
+    // Only allow relative app paths — block open redirects
+    $safe = \App\Core\Security::safeRedirectPath($path);
+    $url = rtrim((string) env('APP_URL', ''), '/') . $safe;
     header('Location: ' . $url);
     exit;
 }
@@ -86,6 +88,7 @@ function old(string $key, string $default = ''): string
 
 function flash_old(array $data): void
 {
+    unset($data['password'], $data['password_confirmation'], $data['password_hint'], $data['_csrf']);
     \App\Core\Session::set('_old', $data);
 }
 
@@ -146,10 +149,35 @@ function generate_token(int $bytes = 24): string
     return bin2hex(random_bytes($bytes));
 }
 
+/**
+ * Child exam password: FirstName + birth year (product rule).
+ * Always store via child_password_hash(); show plaintext only once (email/flash).
+ */
 function child_password(string $firstName, string $birthDate): string
 {
     $year = date('Y', strtotime($birthDate));
-    return $firstName . $year;
+    $base = preg_replace('/\s+/u', '', trim($firstName)) ?: 'Usaq';
+    return $base . $year;
+}
+
+function child_password_hash(string $plain): string
+{
+    return password_hash($plain, PASSWORD_DEFAULT);
+}
+
+function child_password_display(?string $stored, ?string $firstName = null, ?string $birthDate = null): string
+{
+    if ($stored === null || $stored === '') {
+        return '—';
+    }
+    if (str_starts_with($stored, '$2y$') || str_starts_with($stored, '$argon2')) {
+        // Reconstruct display formula for parents (not a secret beyond name+year)
+        if ($firstName && $birthDate) {
+            return child_password($firstName, $birthDate);
+        }
+        return '••••••••';
+    }
+    return $stored;
 }
 
 function format_date(?string $datetime, string $format = 'd.m.Y H:i'): string

@@ -29,7 +29,7 @@
                 <td><?= e(grade_label((int)$c['grade'])) ?></td>
                 <td><?= e(sector_label($c['sector'])) ?></td>
                 <td><?= e($c['gender'] === 'girl' ? __('girl') : __('boy')) ?></td>
-                <td><code><?= e($c['password_hint']) ?></code></td>
+                <td><code><?= e(child_password_display($c['password_hint'] ?? null, $c['first_name'] ?? null, $c['birth_date'] ?? null)) ?></code></td>
                 <td class="actions-cell">
                     <form method="post" action="<?= url('/admin/usaq/sifre/' . $c['id']) ?>" class="inline-reset">
                         <?= csrf_field() ?>

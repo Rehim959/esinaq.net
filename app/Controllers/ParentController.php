@@ -80,7 +80,8 @@ final class ParentController
         }
 
         $token = generate_token(16);
-        $hint = child_password($first, $birth);
+        $plainPassword = child_password($first, $birth);
+        $hint = child_password_hash($plainPassword);
         $pdo = Database::connection();
         $pdo->prepare(
             'INSERT INTO children (parent_id, first_name, last_name, birth_date, grade, sector, gender, access_token, password_hint)
@@ -97,7 +98,7 @@ final class ParentController
             'last_name' => $last,
             'grade' => $grade,
             'sector' => $sector,
-            'password_hint' => $hint,
+            'password_hint' => $plainPassword,
         ];
 
         $link = url('/imtahan/' . $token);

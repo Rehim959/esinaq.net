@@ -1,11 +1,22 @@
+# Safety net if document root is the project root (prefer public/ as docroot)
+<IfModule mod_rewrite.c>
 RewriteEngine On
 
-# If already in public, skip
-RewriteRule ^public/ - [L]
+# Never serve sensitive paths from project root
+RewriteRule ^(\.env|app/|database/|routes/|lang/|storage/|docker/|vendor/) - [F,L]
+RewriteRule (^|/)\. - [F,L]
+RewriteRule \.(env|sql|log|lock)$ - [F,L]
 
-# Serve existing files from root (rare)
-RewriteCond %{REQUEST_FILENAME} -f
-RewriteRule ^ - [L]
+# If already under public/, stop
+RewriteRule ^public/ - [L]
 
 # Route everything through public/
 RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+# Fallback deny for direct file access when rewrite is unavailable
+<FilesMatch "^\.env">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+</FilesMatch>

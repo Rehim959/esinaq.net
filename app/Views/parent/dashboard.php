@@ -17,7 +17,7 @@
                         <h3><?= e($c['first_name'] . ' ' . $c['last_name']) ?></h3>
                         <p class="muted"><?= e(grade_label((int)$c['grade'])) ?> · <?= e(sector_label($c['sector'])) ?></p>
                         <p class="tiny"><?= e(__('link')) ?>: <code><?= e(url('/imtahan/' . $c['access_token'])) ?></code></p>
-                        <p class="tiny"><?= e(__('password')) ?>: <code><?= e($c['password_hint']) ?></code></p>
+                        <p class="tiny"><?= e(__('password')) ?>: <code><?= e(child_password_display($c['password_hint'] ?? null, $c['first_name'] ?? null, $c['birth_date'] ?? null)) ?></code></p>
                     </div>
                     <div class="child-meta">
                         <?php $last = $stats[$c['id']][0] ?? null; ?>

@@ -18,7 +18,7 @@ final class Session
             'path' => '/',
             'httponly' => true,
             'samesite' => 'Lax',
-            'secure' => str_starts_with((string) env('APP_URL', ''), 'https'),
+            'secure' => Security::isHttps(),
         ]);
         session_start();
     }
@@ -60,6 +60,14 @@ final class Session
         session_destroy();
     }
 
+    public static function regenerate(bool $deleteOld = true): void
+    {
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_regenerate_id($deleteOld);
+        }
+        self::rotateCsrf();
+    }
+
     public static function csrfToken(): string
     {
         $token = self::get('_csrf');
@@ -68,6 +76,11 @@ final class Session
             self::set('_csrf', $token);
         }
         return $token;
+    }
+
+    public static function rotateCsrf(): void
+    {
+        self::set('_csrf', bin2hex(random_bytes(32)));
     }
 
     public static function verifyCsrf(?string $token): bool

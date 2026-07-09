@@ -1,8 +1,16 @@
 RewriteEngine On
 
-# Redirect to HTTPS in production (uncomment on hosting)
-# RewriteCond %{HTTPS} off
-# RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+# Force HTTPS in production (skip localhost / Docker)
+RewriteCond %{HTTP_HOST} !^localhost [NC]
+RewriteCond %{HTTP_HOST} !^127\.0\.0\.1
+RewriteCond %{HTTPS} off
+RewriteCond %{HTTP:X-Forwarded-Proto} !https
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Block hidden / sensitive files inside public
+RewriteRule (^|/)\. - [F,L]
+RewriteRule \.(env|sql|log|lock)$ - [F,L]
+RewriteRule ^install\.php$ - [L]
 
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d

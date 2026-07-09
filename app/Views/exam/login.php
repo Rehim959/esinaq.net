@@ -4,7 +4,7 @@
         <div class="exam-brand"><span class="brand-e">e</span>Sınaq</div>
         <h1><?= e(__('hello_name', ['name' => $child['first_name']])) ?></h1>
         <p class="muted"><?= e(__('exam_password_help')) ?><br><?= e(__('exam_password_format')) ?></p>
-        <label><?= e(__('password')) ?><input type="text" name="password" placeholder="<?= e(__('exam_password_example')) ?>" required autocomplete="off"></label>
+        <label><?= e(__('password')) ?><input type="password" name="password" placeholder="<?= e(__('exam_password_example')) ?>" required autocomplete="current-password"></label>
         <button class="btn btn-block" type="submit"><?= e(__('sign_in_btn')) ?></button>
     </form>
 </div>

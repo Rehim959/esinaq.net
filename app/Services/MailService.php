@@ -18,6 +18,8 @@ final class MailService
         $user = (string) env('MAIL_USER', '');
         $pass = (string) env('MAIL_PASS', '');
         $encryption = (string) env('MAIL_ENCRYPTION', '');
+        $subject = \App\Core\Security::sanitizeHeaderValue($subject);
+        $to = \App\Core\Security::sanitizeHeaderValue($to);
 
         $ok = false;
         $error = null;
@@ -212,7 +214,7 @@ final class MailService
                 <a href="' . e($link) . '" style="background:#0B6E4F;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">İmtahana keç</a>
             </p>'
         );
-        return $this->send($email, 'İmtahan xatırlatması: ' . $childName . ' | eSınaq', $html);
+        return $this->send($email, \App\Core\Security::sanitizeHeaderValue('İmtahan xatırlatması: ' . $childName . ' | eSınaq'), $html);
     }
 
     private function wrap(string $title, string $body): string

@@ -6,6 +6,8 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\Database;
+use App\Core\RateLimiter;
+use App\Core\Security;
 use App\Core\Session;
 use App\Core\View;
 use App\Services\ExamService;
@@ -28,19 +30,32 @@ final class AdminController
             redirect('/admin/login');
         }
 
+        $rateKey = RateLimiter::clientKey('admin_login');
+        if (RateLimiter::tooManyAttempts($rateKey, 6, 900)) {
+            $wait = RateLimiter::availableIn($rateKey, 900);
+            Session::flash('error', __('err_rate_limit', ['n' => (string) max(1, (int) ceil($wait / 60))]));
+            redirect('/admin/login');
+        }
+
         $email = strtolower(trim((string) ($_POST['email'] ?? '')));
         $password = (string) ($_POST['password'] ?? '');
 
         if (!Auth::attemptAdmin($email, $password)) {
+            RateLimiter::hit($rateKey, 900);
             Session::flash('error', __('err_login'));
             redirect('/admin/login');
         }
 
+        RateLimiter::clear($rateKey);
         redirect('/admin');
     }
 
     public function logout(): void
     {
+        if (!Session::verifyCsrf($_POST['_csrf'] ?? null)) {
+            Session::flash('error', __('err_csrf_short'));
+            redirect('/admin/login');
+        }
         Auth::logout();
         redirect('/admin/login');
     }
@@ -265,12 +280,40 @@ final class AdminController
     {
         Auth::requireAdmin();
         if (!Session::verifyCsrf($_POST['_csrf'] ?? null)) {
+            Session::flash('error', __('err_csrf_short'));
             redirect('/admin/imtahanlar');
         }
         $examId = (int) $id;
+        $pdo = Database::connection();
+        $exam = $pdo->prepare('SELECT id, status FROM exams WHERE id = ?');
+        $exam->execute([$examId]);
+        $row = $exam->fetch();
+        if (!$row) {
+            Session::flash('error', __('err_exam_not_found'));
+            redirect('/admin/imtahanlar');
+        }
+
+        // Do not repick questions if exam already running or has student sessions
+        $countStmt = $pdo->prepare('SELECT COUNT(*) FROM exam_sessions WHERE exam_id = ?');
+        $countStmt->execute([$examId]);
+        $sessionCount = (int) $countStmt->fetchColumn();
+
+        $qCountStmt = $pdo->prepare('SELECT COUNT(*) FROM exam_questions WHERE exam_id = ?');
+        $qCountStmt->execute([$examId]);
+        $existingQuestions = (int) $qCountStmt->fetchColumn();
+
         $service = new ExamService();
-        $count = $service->pickQuestions($examId);
-        Database::connection()->prepare("UPDATE exams SET status = 'running' WHERE id = ?")->execute([$examId]);
+        if ($row['status'] === 'running' || $sessionCount > 0) {
+            if ($existingQuestions === 0) {
+                $count = $service->pickQuestions($examId);
+            } else {
+                $count = $existingQuestions;
+            }
+        } else {
+            $count = $service->pickQuestions($examId);
+        }
+
+        $pdo->prepare("UPDATE exams SET status = 'running' WHERE id = ?")->execute([$examId]);
         Session::flash('success', __('ok_exam_started', ['n' => (string) $count]));
         redirect('/admin/imtahanlar');
     }
@@ -279,6 +322,7 @@ final class AdminController
     {
         Auth::requireAdmin();
         if (!Session::verifyCsrf($_POST['_csrf'] ?? null)) {
+            Session::flash('error', __('err_csrf_short'));
             redirect('/admin/imtahanlar');
         }
         Database::connection()->prepare("UPDATE exams SET status = 'finished' WHERE id = ?")->execute([(int) $id]);
@@ -445,7 +489,12 @@ final class AdminController
         }
 
         $custom = trim((string) ($_POST['new_password'] ?? ''));
-        $hint = $custom !== '' ? $custom : child_password($child['first_name'], $child['birth_date']);
+        $plain = $custom !== '' ? $custom : child_password($child['first_name'], $child['birth_date']);
+        if (strlen($plain) < 4) {
+            Session::flash('error', __('err_password_len'));
+            redirect('/admin/usaqlar');
+        }
+        $hint = child_password_hash($plain);
         $newToken = generate_token(16);
 
         $pdo->prepare('UPDATE children SET password_hint = ?, access_token = ? WHERE id = ?')
@@ -453,12 +502,12 @@ final class AdminController
 
         Session::flash('success', __('ok_child_password_reset', [
             'name' => $child['first_name'],
-            'password' => $hint,
+            'password' => $plain,
             'link' => url('/imtahan/' . $newToken),
         ]));
 
-        $back = (string) ($_POST['back'] ?? '');
-        if ($back === 'parent') {
+        $back = Security::safeRedirectPath((string) ($_POST['back'] ?? ''));
+        if (($back === '/admin/valideyn/' . $child['parent_id']) || ((string) ($_POST['back'] ?? '') === 'parent')) {
             redirect('/admin/valideyn/' . $child['parent_id']);
         }
         redirect('/admin/usaqlar');
