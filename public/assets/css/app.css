@@ -468,6 +468,17 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
   display: block; font-size: 1.05rem; margin-bottom: 6px; color: #b35400;
 }
 .grade-sector-alert p { margin: 0; font-size: 0.95rem; line-height: 1.45; }
+.register-notice {
+  margin: 0 0 20px; padding: 14px 16px; border-radius: 12px;
+  background: #eef7fb; border: 2px solid var(--brand);
+  color: var(--brand-deep); animation: rise .4s ease both;
+}
+.register-notice strong {
+  display: block; font-size: 1.02rem; margin-bottom: 6px; color: var(--brand);
+}
+.register-notice p {
+  margin: 0; font-size: 0.98rem; line-height: 1.5; font-weight: 600;
+}
 .team-add-card { margin-bottom: 28px; }
 .team-add-title { margin-top: 0; }
 

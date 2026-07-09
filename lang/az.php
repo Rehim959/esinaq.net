@@ -83,6 +83,8 @@ return [
     'parent_login' => 'Valideyn girişi',
     'parent_register_title' => 'Valideyn qeydiyyatı',
     'parent_register_lead' => 'Hesab yaradın — övladlarınızı əlavə edib nəticələri izləyin.',
+    'parent_register_notice_title' => 'Vacib məlumat',
+    'parent_register_notice' => 'Əvvəlcə valideyn öz şəxsi hesabını yaratmalıdır. Yalnız bundan sonra valideyn öz hesabı ilə daxil olub övladlarını imtahan sisteminə qeydiyyatdan keçirə bilər.',
     'already_have_account' => 'Artıq hesabınız var?',
     'sign_in' => 'Daxil olun',
     'sign_in_btn' => 'Daxil ol',
