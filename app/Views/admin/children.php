@@ -36,10 +36,12 @@
                         <input type="text" name="new_password" placeholder="<?= e(__('new_or_auto')) ?>" class="input-sm">
                         <button class="btn btn-sm" type="submit"><?= e(__('reset_password_btn')) ?></button>
                     </form>
+                    <?php if (\App\Core\Auth::isSuperAdmin()): ?>
                     <form method="post" action="<?= url('/admin/usaq/sil/' . $c['id']) ?>" class="inline-form" onsubmit="return confirm(<?= json_encode(__('confirm_delete_child'), JSON_UNESCAPED_UNICODE) ?>)">
                         <?= csrf_field() ?>
                         <button class="btn btn-sm btn-danger" type="submit"><?= e(__('delete')) ?></button>
                     </form>
+                    <?php endif; ?>
                 </td>
             </tr>
         <?php endforeach; ?>

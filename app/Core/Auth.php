@@ -16,10 +16,20 @@ final class Auth
             return false;
         }
 
+        if (isset($admin['is_active']) && !(int) $admin['is_active']) {
+            return false;
+        }
+
+        $role = (string) ($admin['role'] ?? 'super_admin');
+        if (!in_array($role, ['super_admin', 'moderator'], true)) {
+            $role = 'super_admin';
+        }
+
         Session::regenerate();
         Session::set('admin_id', (int) $admin['id']);
         Session::set('admin_name', $admin['full_name']);
         Session::set('admin_email', $admin['email']);
+        Session::set('admin_role', $role);
         Session::remove('parent_id');
         Session::remove('child_id');
         Session::remove('child_token');
@@ -46,6 +56,7 @@ final class Auth
         Session::remove('admin_id');
         Session::remove('admin_name');
         Session::remove('admin_email');
+        Session::remove('admin_role');
         Session::remove('child_id');
         Session::remove('child_token');
         Session::remove('child_name');
@@ -90,6 +101,7 @@ final class Auth
         Session::remove('admin_id');
         Session::remove('admin_name');
         Session::remove('admin_email');
+        Session::remove('admin_role');
         Session::remove('parent_id');
         Session::remove('parent_name');
         Session::remove('parent_email');
@@ -100,6 +112,26 @@ final class Auth
     {
         $id = Session::get('admin_id');
         return is_int($id) || is_numeric($id) ? (int) $id : null;
+    }
+
+    public static function adminRole(): string
+    {
+        $role = Session::get('admin_role');
+        if (is_string($role) && in_array($role, ['super_admin', 'moderator'], true)) {
+            return $role;
+        }
+        // Legacy sessions before role column: treat as super_admin
+        return self::adminId() ? 'super_admin' : '';
+    }
+
+    public static function isSuperAdmin(): bool
+    {
+        return self::adminId() !== null && self::adminRole() === 'super_admin';
+    }
+
+    public static function isModerator(): bool
+    {
+        return self::adminId() !== null && self::adminRole() === 'moderator';
     }
 
     public static function parentId(): ?int
@@ -118,6 +150,15 @@ final class Auth
     {
         if (!self::adminId()) {
             redirect('/admin/login');
+        }
+    }
+
+    public static function requireSuperAdmin(): void
+    {
+        self::requireAdmin();
+        if (!self::isSuperAdmin()) {
+            Session::flash('error', __('err_forbidden'));
+            redirect('/admin');
         }
     }
 

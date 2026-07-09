@@ -22,6 +22,7 @@
             </form>
         </section>
 
+        <?php if (\App\Core\Auth::isSuperAdmin()): ?>
         <section class="form-card danger-zone">
             <h2><?= e(__('delete_parent')) ?></h2>
             <p class="muted"><?= e(__('delete_parent_help')) ?></p>
@@ -30,6 +31,7 @@
                 <button class="btn btn-danger" type="submit"><?= e(__('delete')) ?></button>
             </form>
         </section>
+        <?php endif; ?>
     </div>
 
     <h2><?= e(__('children_list')) ?></h2>
@@ -66,11 +68,13 @@
                             <input type="text" name="new_password" placeholder="<?= e(__('new_password')) ?>" class="input-sm">
                             <button class="btn btn-sm" type="submit"><?= e(__('reset_password_btn')) ?></button>
                         </form>
+                        <?php if (\App\Core\Auth::isSuperAdmin()): ?>
                         <form method="post" action="<?= url('/admin/usaq/sil/' . $c['id']) ?>" class="inline-form" onsubmit="return confirm(<?= json_encode(__('confirm_delete_child'), JSON_UNESCAPED_UNICODE) ?>)">
                             <?= csrf_field() ?>
                             <input type="hidden" name="back" value="parent">
                             <button class="btn btn-sm btn-danger" type="submit"><?= e(__('delete')) ?></button>
                         </form>
+                        <?php endif; ?>
                     </td>
                 </tr>
             <?php endforeach; ?>

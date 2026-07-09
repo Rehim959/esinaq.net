@@ -41,6 +41,10 @@
             </div>
         </fieldset>
 
+        <div class="grade-sector-alert" role="alert">
+            <strong><?= e(__('grade_sector_alert_title')) ?></strong>
+            <p><?= e(__('grade_sector_alert_text')) ?></p>
+        </div>
         <div class="grid-2">
             <label><?= e(__('current_grade')) ?>
                 <select name="grade" required>

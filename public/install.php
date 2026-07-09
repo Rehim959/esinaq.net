@@ -147,8 +147,8 @@ ENV;
             $pdo->prepare('UPDATE admins SET password_hash = ? WHERE email = ?')->execute([$hash, $data['admin_email']]);
             $messages[] = 'Admin şifrəsi yeniləndi';
         } else {
-            $pdo->prepare('INSERT INTO admins (email, password_hash, full_name) VALUES (?, ?, ?)')
-                ->execute([$data['admin_email'], $hash, 'Sistem Administratoru']);
+            $pdo->prepare('INSERT INTO admins (email, password_hash, full_name, role, is_active) VALUES (?, ?, ?, ?, 1)')
+                ->execute([$data['admin_email'], $hash, 'Sistem Administratoru', 'super_admin']);
             $messages[] = 'Admin yaradıldı';
         }
 

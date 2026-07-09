@@ -41,8 +41,14 @@ try {
     $stmt->execute([$adminEmail]);
     $admin = $stmt->fetch();
     if (!$admin && !is_placeholder_secret($adminPass) && strlen($adminPass) >= 10) {
-        $pdo->prepare('INSERT INTO admins (email, password_hash, full_name) VALUES (?, ?, ?)')
-            ->execute([$adminEmail, password_hash($adminPass, PASSWORD_DEFAULT), 'Sistem Administratoru']);
+        $hash = password_hash($adminPass, PASSWORD_DEFAULT);
+        try {
+            $pdo->prepare('INSERT INTO admins (email, password_hash, full_name, role, is_active) VALUES (?, ?, ?, ?, 1)')
+                ->execute([$adminEmail, $hash, 'Sistem Administratoru', 'super_admin']);
+        } catch (Throwable) {
+            $pdo->prepare('INSERT INTO admins (email, password_hash, full_name) VALUES (?, ?, ?)')
+                ->execute([$adminEmail, $hash, 'Sistem Administratoru']);
+        }
     }
 
     // Ensure subjects exist

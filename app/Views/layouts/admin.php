@@ -19,6 +19,9 @@
         <a href="<?= url('/admin/imtahanlar') ?>"><?= e(__('exams')) ?></a>
         <a href="<?= url('/admin/valideynler') ?>"><?= e(__('parents')) ?></a>
         <a href="<?= url('/admin/usaqlar') ?>"><?= e(__('children_list')) ?></a>
+        <?php if (\App\Core\Auth::isSuperAdmin()): ?>
+            <a href="<?= url('/admin/komanda') ?>"><?= e(__('team')) ?></a>
+        <?php endif; ?>
     </nav>
     <div class="sidebar-lang"><?= lang_switcher() ?></div>
     <form method="post" action="<?= url('/admin/logout') ?>" class="sidebar-logout"><?= csrf_field() ?><button type="submit"><?= e(__('logout')) ?></button></form>
@@ -26,7 +29,10 @@
 <div class="panel-main">
     <header class="panel-top">
         <h1><?= e($title ?? '') ?></h1>
-        <div class="muted"><?= e(\App\Core\Session::get('admin_name', '')) ?></div>
+        <div class="muted">
+            <?= e(\App\Core\Session::get('admin_name', '')) ?>
+            · <?= e(\App\Core\Auth::isSuperAdmin() ? __('role_super_admin') : __('role_moderator')) ?>
+        </div>
     </header>
     <?php if ($msg = \App\Core\Session::flash('success')): ?>
         <div class="flash flash-success"><?= e($msg) ?></div>
@@ -38,5 +44,3 @@
 </div>
 </body>
 </html>
-
-

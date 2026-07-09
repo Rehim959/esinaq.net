@@ -57,6 +57,8 @@ $router->get('/admin/imtahanlar/yeni', [AdminController::class, 'showCreateExam'
 $router->post('/admin/imtahanlar/yeni', [AdminController::class, 'createExam']);
 $router->post('/admin/imtahanlar/baslat/{id}', [AdminController::class, 'startExam']);
 $router->post('/admin/imtahanlar/bitir/{id}', [AdminController::class, 'stopExam']);
+$router->post('/admin/imtahanlar/yeniden/{id}', [AdminController::class, 'cloneExam']);
+$router->post('/admin/imtahanlar/sil/{id}', [AdminController::class, 'deleteExam']);
 $router->get('/admin/imtahanlar/monitor/{id}', [AdminController::class, 'examMonitor']);
 $router->get('/admin/valideynler', [AdminController::class, 'parents']);
 $router->get('/admin/valideyn/{id}', [AdminController::class, 'parentShow']);
@@ -65,5 +67,8 @@ $router->post('/admin/valideyn/sil/{id}', [AdminController::class, 'deleteParent
 $router->get('/admin/usaqlar', [AdminController::class, 'children']);
 $router->post('/admin/usaq/sifre/{id}', [AdminController::class, 'resetChildPassword']);
 $router->post('/admin/usaq/sil/{id}', [AdminController::class, 'deleteChild']);
+$router->get('/admin/komanda', [AdminController::class, 'team']);
+$router->post('/admin/komanda', [AdminController::class, 'addModerator']);
+$router->post('/admin/komanda/toggle/{id}', [AdminController::class, 'toggleAdmin']);
 
 return $router;

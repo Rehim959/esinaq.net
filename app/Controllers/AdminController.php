@@ -359,6 +359,159 @@ final class AdminController
         redirect('/admin/imtahanlar');
     }
 
+    public function cloneExam(string $id): void
+    {
+        Auth::requireAdmin();
+        if (!Session::verifyCsrf($_POST['_csrf'] ?? null)) {
+            Session::flash('error', __('err_csrf_short'));
+            redirect('/admin/imtahanlar');
+        }
+
+        $examId = (int) $id;
+        $pdo = Database::connection();
+        $stmt = $pdo->prepare('SELECT * FROM exams WHERE id = ?');
+        $stmt->execute([$examId]);
+        $src = $stmt->fetch();
+        if (!$src) {
+            Session::flash('error', __('err_exam_not_found'));
+            redirect('/admin/imtahanlar');
+        }
+
+        $title = (string) $src['title'];
+        if (!str_contains($title, '(yenidən)')) {
+            $title .= ' (yenidən)';
+        }
+
+        $duration = max(5, (int) $src['duration_minutes']);
+        $windowMin = max($duration, 60);
+        $pdo->prepare(
+            "INSERT INTO exams (title, grade, sector, duration_minutes, questions_per_subject, starts_at, ends_at, status, shuffle_questions, created_by)
+             VALUES (?, ?, ?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL {$windowMin} MINUTE), ?, ?, ?)"
+        )->execute([
+            $title,
+            (int) $src['grade'],
+            $src['sector'],
+            $duration,
+            (int) $src['questions_per_subject'],
+            'running',
+            (int) $src['shuffle_questions'],
+            Auth::adminId(),
+        ]);
+
+        $newId = (int) $pdo->lastInsertId();
+        $subjects = $pdo->prepare('SELECT subject_id, question_count FROM exam_subjects WHERE exam_id = ?');
+        $subjects->execute([$examId]);
+        $ins = $pdo->prepare('INSERT INTO exam_subjects (exam_id, subject_id, question_count) VALUES (?, ?, ?)');
+        foreach ($subjects->fetchAll() as $row) {
+            $ins->execute([$newId, (int) $row['subject_id'], (int) $row['question_count']]);
+        }
+
+        $count = (new ExamService())->pickQuestions($newId);
+        Session::flash('success', __('ok_exam_cloned', ['n' => (string) $count]));
+        redirect('/admin/imtahanlar');
+    }
+
+    public function deleteExam(string $id): void
+    {
+        Auth::requireSuperAdmin();
+        if (!Session::verifyCsrf($_POST['_csrf'] ?? null)) {
+            Session::flash('error', __('err_csrf_short'));
+            redirect('/admin/imtahanlar');
+        }
+
+        $examId = (int) $id;
+        $pdo = Database::connection();
+        $stmt = $pdo->prepare('SELECT id FROM exams WHERE id = ?');
+        $stmt->execute([$examId]);
+        if (!$stmt->fetch()) {
+            Session::flash('error', __('err_exam_not_found'));
+            redirect('/admin/imtahanlar');
+        }
+
+        $pdo->prepare('DELETE FROM exams WHERE id = ?')->execute([$examId]);
+        Session::flash('success', __('ok_exam_deleted'));
+        redirect('/admin/imtahanlar');
+    }
+
+    public function team(): void
+    {
+        Auth::requireSuperAdmin();
+        $admins = Database::connection()->query(
+            'SELECT id, email, full_name, role, is_active, created_at FROM admins ORDER BY id ASC'
+        )->fetchAll();
+
+        View::render('admin/team', [
+            'title' => __('team_title'),
+            'admins' => $admins,
+        ], 'layouts/admin');
+    }
+
+    public function addModerator(): void
+    {
+        Auth::requireSuperAdmin();
+        if (!Session::verifyCsrf($_POST['_csrf'] ?? null)) {
+            Session::flash('error', __('err_csrf_short'));
+            redirect('/admin/komanda');
+        }
+
+        $email = strtolower(trim((string) ($_POST['email'] ?? '')));
+        $fullName = trim((string) ($_POST['full_name'] ?? ''));
+        $password = (string) ($_POST['password'] ?? '');
+        $role = (string) ($_POST['role'] ?? 'moderator');
+        if (!in_array($role, ['super_admin', 'moderator'], true)) {
+            $role = 'moderator';
+        }
+
+        if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL) || $fullName === '' || strlen($password) < 8) {
+            Session::flash('error', __('err_admin_fields'));
+            redirect('/admin/komanda');
+        }
+
+        $pdo = Database::connection();
+        $exists = $pdo->prepare('SELECT id FROM admins WHERE email = ?');
+        $exists->execute([$email]);
+        if ($exists->fetch()) {
+            Session::flash('error', __('err_moderator_exists'));
+            redirect('/admin/komanda');
+        }
+
+        $pdo->prepare(
+            'INSERT INTO admins (email, password_hash, full_name, role, is_active) VALUES (?, ?, ?, ?, 1)'
+        )->execute([$email, password_hash($password, PASSWORD_DEFAULT), $fullName, $role]);
+
+        Session::flash('success', __('ok_moderator_added'));
+        redirect('/admin/komanda');
+    }
+
+    public function toggleAdmin(string $id): void
+    {
+        Auth::requireSuperAdmin();
+        if (!Session::verifyCsrf($_POST['_csrf'] ?? null)) {
+            Session::flash('error', __('err_csrf_short'));
+            redirect('/admin/komanda');
+        }
+
+        $adminId = (int) $id;
+        if ($adminId === Auth::adminId()) {
+            Session::flash('error', __('err_cannot_demote_self'));
+            redirect('/admin/komanda');
+        }
+
+        $pdo = Database::connection();
+        $stmt = $pdo->prepare('SELECT id, is_active FROM admins WHERE id = ?');
+        $stmt->execute([$adminId]);
+        $row = $stmt->fetch();
+        if (!$row) {
+            Session::flash('error', __('err_forbidden'));
+            redirect('/admin/komanda');
+        }
+
+        $newActive = (int) $row['is_active'] ? 0 : 1;
+        $pdo->prepare('UPDATE admins SET is_active = ? WHERE id = ?')->execute([$newActive, $adminId]);
+        Session::flash('success', __('ok_moderator_updated'));
+        redirect('/admin/komanda');
+    }
+
     public function examMonitor(string $id): void
     {
         Auth::requireAdmin();
@@ -471,7 +624,7 @@ final class AdminController
 
     public function deleteParent(string $id): void
     {
-        Auth::requireAdmin();
+        Auth::requireSuperAdmin();
         if (!Session::verifyCsrf($_POST['_csrf'] ?? null)) {
             Session::flash('error', __('err_csrf_short'));
             redirect('/admin/valideynler');
@@ -544,7 +697,7 @@ final class AdminController
 
     public function deleteChild(string $id): void
     {
-        Auth::requireAdmin();
+        Auth::requireSuperAdmin();
         if (!Session::verifyCsrf($_POST['_csrf'] ?? null)) {
             Session::flash('error', __('err_csrf_short'));
             redirect('/admin/usaqlar');

@@ -459,6 +459,15 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .hint, .hint-box { color: var(--muted); font-size: 14px; }
 .hint-box { margin: 16px 0; background: #e3f2fd; }
 .hint-box ul { margin: 8px 0 0; padding-left: 18px; }
+.grade-sector-alert {
+  margin: 0 0 18px; padding: 14px 16px; border-radius: 12px;
+  background: #fff4e5; border: 2px solid #e67e22; color: #6b3a00;
+  animation: rise .4s ease both;
+}
+.grade-sector-alert strong {
+  display: block; font-size: 1.05rem; margin-bottom: 6px; color: #b35400;
+}
+.grade-sector-alert p { margin: 0; font-size: 0.95rem; line-height: 1.45; }
 
 .child-list { display: flex; flex-direction: column; gap: 12px; }
 .child-row { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
