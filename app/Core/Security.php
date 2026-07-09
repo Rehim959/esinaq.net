@@ -23,22 +23,62 @@ final class Security
         }
 
         $host = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
+        $host = preg_replace('/:\d+$/', '', $host) ?? $host;
         $uri = (string) ($_SERVER['REQUEST_URI'] ?? '/');
-        $requestHttps = self::requestIsHttps();
-        $appUrlHttps = str_starts_with((string) env('APP_URL', ''), 'https://');
 
-        // Same-host HTTP → HTTPS. Skip when APP_URL is already https
-        // (TLS often terminated at nginx without X-Forwarded-Proto).
-        if (!$requestHttps && !$appUrlHttps) {
+        // Observatory needs: http://HOST → https://HOST (same host), then optional www hop.
+        if (self::shouldRedirectHttpToHttps()) {
             header('Location: https://' . $host . $uri, true, 301);
             exit;
         }
 
-        // Apex → www always on HTTPS
-        if ($host === 'esinaq.net') {
+        if ($host === 'esinaq.net' && self::requestIsHttps()) {
             header('Location: https://www.esinaq.net' . $uri, true, 301);
             exit;
         }
+    }
+
+    /**
+     * Redirect plain HTTP → HTTPS on the same host.
+     * Uses clear HTTP signals so HTTPS behind a TLS-terminating proxy does not loop.
+     */
+    public static function shouldRedirectHttpToHttps(): bool
+    {
+        if (self::requestIsHttps()) {
+            return false;
+        }
+
+        $mode = strtolower((string) env('HTTPS_REDIRECT', 'auto'));
+        if ($mode === 'off' || $mode === '0' || $mode === 'false') {
+            return false;
+        }
+        if ($mode === 'always' || $mode === '1' || $mode === 'true') {
+            return true;
+        }
+
+        // auto: only when we positively know the request is HTTP
+        $port = (string) ($_SERVER['SERVER_PORT'] ?? '');
+        $proto = strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? ''));
+        $scheme = strtolower((string) ($_SERVER['REQUEST_SCHEME'] ?? ''));
+        $https = strtolower((string) ($_SERVER['HTTPS'] ?? ''));
+
+        if ($proto === 'http') {
+            return true;
+        }
+        if ($scheme === 'http') {
+            return true;
+        }
+        if ($port === '80') {
+            return true;
+        }
+        // HTTPS explicitly off and no https forward header
+        if (($https === 'off' || $https === '') && $proto !== 'https' && $port !== '443') {
+            // Last resort for Observatory: many shared hosts leave these empty on HTTP
+            // Enable with HTTPS_REDIRECT=always in .env if auto is not enough.
+            return (bool) env('FORCE_HTTPS_REDIRECT', false);
+        }
+
+        return false;
     }
 
     /** Actual request over TLS (ignore APP_URL). */
@@ -51,7 +91,17 @@ final class Security
         if ($proto === 'https') {
             return true;
         }
-        return (string) ($_SERVER['SERVER_PORT'] ?? '') === '443';
+        if (strtolower((string) ($_SERVER['HTTP_X_FORWARDED_SSL'] ?? '')) === 'on') {
+            return true;
+        }
+        $visitor = (string) ($_SERVER['HTTP_CF_VISITOR'] ?? '');
+        if ($visitor !== '' && str_contains($visitor, '"scheme":"https"')) {
+            return true;
+        }
+        if ((string) ($_SERVER['SERVER_PORT'] ?? '') === '443') {
+            return true;
+        }
+        return strtolower((string) ($_SERVER['REQUEST_SCHEME'] ?? '')) === 'https';
     }
 
     public static function sendHeaders(): void
@@ -67,7 +117,6 @@ final class Security
         header('Permissions-Policy: camera=(), microphone=(), geolocation=()');
         header('Cross-Origin-Resource-Policy: same-origin');
         header('Cross-Origin-Opener-Policy: same-origin');
-        // No unsafe-inline in script-src — nonce only
         header(
             "Content-Security-Policy: default-src 'self'; "
             . "object-src 'none'; "
@@ -90,16 +139,10 @@ final class Security
 
     public static function isHttps(): bool
     {
-        if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+        if (self::requestIsHttps()) {
             return true;
         }
-        $proto = strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? ''));
-        if ($proto === 'https') {
-            return true;
-        }
-        if ((string) ($_SERVER['SERVER_PORT'] ?? '') === '443') {
-            return true;
-        }
+        // Cookies / HSTS: trust APP_URL when proxy hides TLS
         if (str_starts_with((string) env('APP_URL', ''), 'https://')) {
             return true;
         }
@@ -109,8 +152,9 @@ final class Security
     public static function isLocalHost(): bool
     {
         $host = strtolower((string) ($_SERVER['HTTP_HOST'] ?? 'localhost'));
-        return str_starts_with($host, 'localhost')
-            || str_starts_with($host, '127.0.0.1')
+        $host = preg_replace('/:\d+$/', '', $host) ?? $host;
+        return $host === 'localhost'
+            || $host === '127.0.0.1'
             || str_ends_with($host, '.local');
     }
 
