@@ -51,7 +51,7 @@ final class Auth
 
         Session::regenerate();
         Session::set('parent_id', (int) $parent['id']);
-        Session::set('parent_name', $parent['first_name'] . ' ' . $parent['last_name']);
+        Session::set('parent_name', person_full_name($parent));
         Session::set('parent_email', $parent['email']);
         Session::remove('admin_id');
         Session::remove('admin_name');

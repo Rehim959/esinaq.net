@@ -1,9 +1,10 @@
 <div class="page narrow-form">
     <form method="post" action="<?= url('/valideyn/usaq-elave') ?>" class="form-card">
         <?= csrf_field() ?>
-        <div class="grid-2">
-            <label><?= e(__('first_name')) ?><input type="text" name="first_name" value="<?= old('first_name') ?>" required></label>
+        <div class="grid-3">
             <label><?= e(__('last_name')) ?><input type="text" name="last_name" value="<?= old('last_name') ?>" required></label>
+            <label><?= e(__('first_name')) ?><input type="text" name="first_name" value="<?= old('first_name') ?>" required></label>
+            <label><?= e(__('patronymic')) ?><input type="text" name="patronymic" value="<?= old('patronymic') ?>" required></label>
         </div>
 
         <fieldset class="birth-fieldset">

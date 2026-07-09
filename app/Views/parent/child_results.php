@@ -5,7 +5,7 @@
     </div>
 
     <div class="info-strip">
-        <div><strong><?= e($child['first_name'] . ' ' . $child['last_name']) ?></strong></div>
+        <div><strong><?= e(person_full_name($child)) ?></strong></div>
         <div><?= e(grade_label((int)$child['grade'])) ?> · <?= e(sector_label($child['sector'])) ?></div>
         <div class="tiny"><?= e(__('password')) ?>: <code><?= e(child_password_display($child['password_hint'] ?? null, $child['first_name'] ?? null, $child['birth_date'] ?? null)) ?></code></div>
     </div>

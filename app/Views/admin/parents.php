@@ -15,9 +15,9 @@
         <?php foreach ($parents as $p): ?>
             <tr>
                 <td><?= (int)$p['id'] ?></td>
-                <td><?= e($p['first_name'] . ' ' . $p['last_name']) ?></td>
+                <td><?= e(person_full_name($p)) ?></td>
                 <td><?= e($p['email']) ?></td>
-                <td><?= e($p['phone'] ?? '—') ?></td>
+                <td><?= e($p['phone'] !== '' ? $p['phone'] : '—') ?></td>
                 <td><?= (int)$p['child_count'] ?></td>
                 <td><?= e(format_date($p['created_at'], 'd.m.Y')) ?></td>
                 <td class="actions-cell">

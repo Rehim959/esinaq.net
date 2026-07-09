@@ -291,6 +291,42 @@ function child_password_display(?string $stored, ?string $firstName = null, ?str
     return $stored;
 }
 
+/** Full name: Soyad Ad Ata adı */
+function person_full_name(array $row): string
+{
+    $parts = array_filter([
+        trim((string) ($row['last_name'] ?? '')),
+        trim((string) ($row['first_name'] ?? '')),
+        trim((string) ($row['patronymic'] ?? '')),
+    ], static fn ($p) => $p !== '');
+    return $parts === [] ? '—' : implode(' ', $parts);
+}
+
+/** Normalize / validate AZ mobile: returns digits string or null */
+function normalize_phone(string $phone): ?string
+{
+    $raw = trim($phone);
+    if ($raw === '') {
+        return null;
+    }
+    $digits = preg_replace('/\D+/', '', $raw) ?? '';
+    // 994XXXXXXXXX or 0XXXXXXXXX or 9 digits local
+    if (str_starts_with($digits, '994') && strlen($digits) === 12) {
+        return '+' . $digits;
+    }
+    if (str_starts_with($digits, '0') && strlen($digits) === 10) {
+        return '+994' . substr($digits, 1);
+    }
+    if (strlen($digits) === 9) {
+        return '+994' . $digits;
+    }
+    // Accept other international if 10–15 digits
+    if (strlen($digits) >= 10 && strlen($digits) <= 15) {
+        return '+' . $digits;
+    }
+    return null;
+}
+
 function format_date(?string $datetime, string $format = 'd.m.Y H:i'): string
 {
     if (!$datetime) {

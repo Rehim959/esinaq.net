@@ -10,7 +10,7 @@
         <tbody>
         <?php foreach ($sessions as $s): ?>
             <tr>
-                <td><?= e($s['first_name'] . ' ' . $s['last_name']) ?></td>
+                <td><?= e(person_full_name($s)) ?></td>
                 <td><?= e($s['status']) ?></td>
                 <td><?= e(format_date($s['started_at'])) ?></td>
                 <td><?= e(format_date($s['finished_at'])) ?></td>

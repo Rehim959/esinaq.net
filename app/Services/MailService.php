@@ -178,10 +178,11 @@ final class MailService
 
     public function childRegistered(string $email, string $parentName, array $child, string $examLink): bool
     {
+        $full = person_full_name($child);
         $html = $this->wrap(
             e($child['first_name']) . ' sistemə əlavə olundu',
             '<p>Hörmətli ' . e($parentName) . ',</p>
-            <p><strong>' . e($child['first_name'] . ' ' . $child['last_name']) . '</strong> uğurla sistemə qeydiyyatdan keçdi.</p>
+            <p><strong>' . e($full) . '</strong> uğurla sistemə qeydiyyatdan keçdi.</p>
             <div style="background:#f4f7f5;border-radius:10px;padding:16px 20px;margin:20px 0">
                 <p style="margin:0 0 8px"><strong>Giriş məlumatları:</strong></p>
                 <p style="margin:4px 0">Sinif: ' . e(grade_label((int) $child['grade'])) . '</p>
@@ -193,7 +194,7 @@ final class MailService
             </p>
             <p style="font-size:13px;color:#666">Link: ' . e($examLink) . '</p>'
         );
-        return $this->send($email, e($child['first_name']) . ' — giriş məlumatları | eSınaq.net', $html);
+        return $this->send($email, e($full) . ' — giriş məlumatları | eSınaq.net', $html);
     }
 
     public function passwordReset(string $email, string $token): bool

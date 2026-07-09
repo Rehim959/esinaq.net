@@ -14,7 +14,7 @@
             <?php foreach ($children as $c): ?>
                 <article class="child-row">
                     <div>
-                        <h3><?= e($c['first_name'] . ' ' . $c['last_name']) ?></h3>
+                        <h3><?= e(person_full_name($c)) ?></h3>
                         <p class="muted"><?= e(grade_label((int)$c['grade'])) ?> · <?= e(sector_label($c['sector'])) ?></p>
                         <p class="tiny"><?= e(__('link')) ?>: <code><?= e(url('/imtahan/' . $c['access_token'])) ?></code></p>
                         <p class="tiny"><?= e(__('password')) ?>: <code><?= e(child_password_display($c['password_hint'] ?? null, $c['first_name'] ?? null, $c['birth_date'] ?? null)) ?></code></p>

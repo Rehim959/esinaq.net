@@ -61,6 +61,7 @@ final class ParentController
 
         $first = trim((string) ($_POST['first_name'] ?? ''));
         $last = trim((string) ($_POST['last_name'] ?? ''));
+        $patronymic = trim((string) ($_POST['patronymic'] ?? ''));
         $day = (int) ($_POST['birth_day'] ?? 0);
         $month = (int) ($_POST['birth_month'] ?? 0);
         $year = (int) ($_POST['birth_year'] ?? 0);
@@ -73,7 +74,7 @@ final class ParentController
             $birth = sprintf('%04d-%02d-%02d', $year, $month, $day);
         }
 
-        if ($first === '' || $last === '' || $birth === '' || $grade < 1 || $grade > 11 || !in_array($sector, ['az', 'ru'], true) || !in_array($gender, ['boy', 'girl'], true)) {
+        if ($first === '' || $last === '' || $patronymic === '' || $birth === '' || $grade < 1 || $grade > 11 || !in_array($sector, ['az', 'ru'], true) || !in_array($gender, ['boy', 'girl'], true)) {
             Session::flash('error', __('err_child_fields'));
             flash_old($_POST);
             redirect('/valideyn/usaq-elave');
@@ -84,9 +85,9 @@ final class ParentController
         $hint = child_password_hash($plainPassword);
         $pdo = Database::connection();
         $pdo->prepare(
-            'INSERT INTO children (parent_id, first_name, last_name, birth_date, grade, sector, gender, access_token, password_hint)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
-        )->execute([Auth::parentId(), $first, $last, $birth, $grade, $sector, $gender, $token, $hint]);
+            'INSERT INTO children (parent_id, first_name, last_name, patronymic, birth_date, grade, sector, gender, access_token, password_hint)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        )->execute([Auth::parentId(), $first, $last, $patronymic, $birth, $grade, $sector, $gender, $token, $hint]);
 
         $childId = (int) $pdo->lastInsertId();
         $parent = $pdo->prepare('SELECT * FROM parents WHERE id = ?');
@@ -96,6 +97,7 @@ final class ParentController
         $child = [
             'first_name' => $first,
             'last_name' => $last,
+            'patronymic' => $patronymic,
             'grade' => $grade,
             'sector' => $sector,
             'password_hint' => $plainPassword,
@@ -172,7 +174,7 @@ final class ParentController
         $pdo = Database::connection();
 
         $stmt = $pdo->prepare(
-            'SELECT es.*, e.title, e.status AS exam_status, c.first_name, c.last_name, c.parent_id, c.id AS child_id
+            'SELECT es.*, e.title, e.status AS exam_status, c.first_name, c.last_name, c.patronymic, c.parent_id, c.id AS child_id
              FROM exam_sessions es
              JOIN exams e ON e.id = es.exam_id
              JOIN children c ON c.id = es.child_id

@@ -4,9 +4,9 @@
     </div>
 
     <div class="info-strip">
-        <div><strong><?= e($parent['first_name'] . ' ' . $parent['last_name']) ?></strong></div>
+        <div><strong><?= e(person_full_name($parent)) ?></strong></div>
         <div><?= e(__('email')) ?>: <?= e($parent['email']) ?></div>
-        <div><?= e(__('phone')) ?>: <?= e($parent['phone'] ?? '—') ?></div>
+        <div><?= e(__('phone')) ?>: <?= e(($parent['phone'] ?? '') !== '' ? $parent['phone'] : '—') ?></div>
         <div><?= e(__('date')) ?>: <?= e(format_date($parent['created_at'], 'd.m.Y H:i')) ?></div>
     </div>
 
@@ -54,7 +54,7 @@
             <tbody>
             <?php foreach ($children as $c): ?>
                 <tr>
-                    <td><?= e($c['first_name'] . ' ' . $c['last_name']) ?></td>
+                    <td><?= e(person_full_name($c)) ?></td>
                     <td><?= e(format_date($c['birth_date'], 'd.m.Y')) ?></td>
                     <td><?= e(grade_label((int)$c['grade'])) ?></td>
                     <td><?= e(sector_label($c['sector'])) ?></td>
@@ -96,7 +96,7 @@
         <tbody>
         <?php foreach ($sessions as $s): ?>
             <tr>
-                <td><?= e($s['first_name'] . ' ' . $s['last_name']) ?></td>
+                <td><?= e(person_full_name($s)) ?></td>
                 <td><?= e($s['title']) ?></td>
                 <td><?= e($s['status']) ?></td>
                 <td><?= $s['percentage'] !== null ? e((string)$s['percentage']) . '% (' . e((string)$s['letter_grade']) . ')' : '—' ?></td>

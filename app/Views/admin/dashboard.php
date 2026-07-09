@@ -19,7 +19,7 @@
         <tbody>
         <?php foreach ($recent as $r): ?>
             <tr>
-                <td><?= e($r['first_name'] . ' ' . $r['last_name']) ?></td>
+                <td><?= e(person_full_name($r)) ?></td>
                 <td><?= e($r['title']) ?></td>
                 <td><?= e((string)$r['percentage']) ?>%</td>
                 <td><?= e($r['letter_grade']) ?></td>

@@ -37,15 +37,22 @@ final class AuthController
 
         $first = trim((string) ($_POST['first_name'] ?? ''));
         $last = trim((string) ($_POST['last_name'] ?? ''));
+        $patronymic = trim((string) ($_POST['patronymic'] ?? ''));
         $email = strtolower(trim((string) ($_POST['email'] ?? '')));
-        $phone = trim((string) ($_POST['phone'] ?? ''));
+        $phoneRaw = trim((string) ($_POST['phone'] ?? ''));
         $password = (string) ($_POST['password'] ?? '');
         $password2 = (string) ($_POST['password_confirmation'] ?? '');
 
         flash_old($_POST);
 
-        if ($first === '' || $last === '' || $email === '' || $password === '') {
+        if ($first === '' || $last === '' || $patronymic === '' || $email === '' || $phoneRaw === '' || $password === '') {
             Session::flash('error', __('err_required'));
+            redirect('/qeydiyyat');
+        }
+
+        $phone = normalize_phone($phoneRaw);
+        if ($phone === null) {
+            Session::flash('error', __('err_phone'));
             redirect('/qeydiyyat');
         }
 
@@ -75,9 +82,9 @@ final class AuthController
 
         $hash = password_hash($password, PASSWORD_DEFAULT);
         $stmt = $pdo->prepare(
-            'INSERT INTO parents (email, password_hash, first_name, last_name, phone, email_verified_at) VALUES (?, ?, ?, ?, ?, NULL)'
+            'INSERT INTO parents (email, password_hash, first_name, last_name, patronymic, phone, email_verified_at) VALUES (?, ?, ?, ?, ?, ?, NULL)'
         );
-        $stmt->execute([$email, $hash, $first, $last, $phone !== '' ? $phone : null]);
+        $stmt->execute([$email, $hash, $first, $last, $patronymic, $phone]);
 
         clear_old();
         (new MailService())->welcomeParent($email, $first);

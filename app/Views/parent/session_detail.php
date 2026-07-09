@@ -1,7 +1,7 @@
 <div class="page">
     <a href="<?= url('/valideyn/usaq/' . $session['child_id']) ?>" class="btn btn-ghost btn-sm">← <?= e(__('back')) ?></a>
     <div class="info-strip">
-        <div><strong><?= e($session['first_name'] . ' ' . $session['last_name']) ?></strong> — <?= e($session['title']) ?></div>
+        <div><strong><?= e(person_full_name($session)) ?></strong> — <?= e($session['title']) ?></div>
         <div><?= e(__('score')) ?>: <?= e((string)$session['score']) ?>/<?= e((string)$session['max_score']) ?> · <?= e((string)$session['percentage']) ?>% · <strong><?= e($session['letter_grade']) ?></strong> (<?= e($band ?? '') ?>)</div>
         <p class="motivate"><?= e($message ?? '') ?></p>
     </div>

@@ -17,7 +17,8 @@ CREATE TABLE IF NOT EXISTS parents (
     password_hash VARCHAR(255) NOT NULL,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
-    phone VARCHAR(30) NULL,
+    patronymic VARCHAR(100) NOT NULL DEFAULT '',
+    phone VARCHAR(30) NOT NULL,
     email_verified_at TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP
@@ -38,6 +39,7 @@ CREATE TABLE IF NOT EXISTS children (
     parent_id INT UNSIGNED NOT NULL,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
+    patronymic VARCHAR(100) NOT NULL DEFAULT '',
     birth_date DATE NOT NULL,
     grade TINYINT UNSIGNED NOT NULL,
     sector ENUM('az','ru') NOT NULL,

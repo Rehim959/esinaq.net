@@ -75,7 +75,7 @@ final class AdminController
         ];
 
         $recent = $pdo->query(
-            "SELECT es.*, e.title, c.first_name, c.last_name
+            "SELECT es.*, e.title, c.first_name, c.last_name, c.patronymic
              FROM exam_sessions es
              JOIN exams e ON e.id = es.exam_id
              JOIN children c ON c.id = es.child_id
@@ -525,7 +525,7 @@ final class AdminController
         }
 
         $sessions = $pdo->prepare(
-            'SELECT es.*, c.first_name, c.last_name, c.grade, c.sector
+            'SELECT es.*, c.first_name, c.last_name, c.patronymic, c.grade, c.sector
              FROM exam_sessions es
              JOIN children c ON c.id = es.child_id
              WHERE es.exam_id = ?
@@ -573,7 +573,7 @@ final class AdminController
         $kids = $children->fetchAll();
 
         $sessions = $pdo->prepare(
-            'SELECT es.*, e.title, c.first_name, c.last_name
+            'SELECT es.*, e.title, c.first_name, c.last_name, c.patronymic
              FROM exam_sessions es
              JOIN exams e ON e.id = es.exam_id
              JOIN children c ON c.id = es.child_id
@@ -584,7 +584,7 @@ final class AdminController
         $sessions->execute([$parentId]);
 
         View::render('admin/parent_show', [
-            'title' => $parent['first_name'] . ' ' . $parent['last_name'],
+            'title' => person_full_name($parent),
             'parent' => $parent,
             'children' => $kids,
             'sessions' => $sessions->fetchAll(),
@@ -640,7 +640,8 @@ final class AdminController
     {
         Auth::requireAdmin();
         $rows = Database::connection()->query(
-            'SELECT c.*, p.first_name AS parent_first, p.last_name AS parent_last, p.email AS parent_email
+            'SELECT c.*, p.first_name AS parent_first, p.last_name AS parent_last, p.patronymic AS parent_patronymic,
+                    p.email AS parent_email, p.phone AS parent_phone
              FROM children c
              JOIN parents p ON p.id = c.parent_id
              ORDER BY c.id DESC LIMIT 300'

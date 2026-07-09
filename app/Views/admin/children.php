@@ -18,12 +18,19 @@
             <tr>
                 <td><?= (int)$c['id'] ?></td>
                 <td>
-                    <?= e($c['first_name'] . ' ' . $c['last_name']) ?>
+                    <?= e(person_full_name($c)) ?>
                     <div class="tiny muted"><a href="<?= e(url('/imtahan/' . $c['access_token'])) ?>" target="_blank"><?= e(__('exam_link')) ?></a></div>
                 </td>
                 <td>
-                    <a href="<?= url('/admin/valideyn/' . $c['parent_id']) ?>"><?= e($c['parent_first'] . ' ' . $c['parent_last']) ?></a>
+                    <a href="<?= url('/admin/valideyn/' . $c['parent_id']) ?>"><?= e(person_full_name([
+                        'first_name' => $c['parent_first'] ?? '',
+                        'last_name' => $c['parent_last'] ?? '',
+                        'patronymic' => $c['parent_patronymic'] ?? '',
+                    ])) ?></a>
                     <div class="tiny muted"><?= e($c['parent_email']) ?></div>
+                    <?php if (!empty($c['parent_phone'])): ?>
+                        <div class="tiny muted"><?= e($c['parent_phone']) ?></div>
+                    <?php endif; ?>
                 </td>
                 <td><?= e(format_date($c['birth_date'], 'd.m.Y')) ?></td>
                 <td><?= e(grade_label((int)$c['grade'])) ?></td>
