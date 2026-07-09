@@ -132,7 +132,7 @@ final class ExamService
     public function getExamQuestions(int $examId, bool $shuffle = false): array
     {
         $pdo = Database::connection();
-        $sql = 'SELECT eq.sort_order, eq.subject_id, q.*, s.name_az AS subject_name
+        $sql = 'SELECT eq.sort_order, eq.subject_id, q.*, s.name_az AS subject_name, s.name_ru AS subject_name_ru
                 FROM exam_questions eq
                 JOIN questions q ON q.id = eq.question_id
                 JOIN subjects s ON s.id = eq.subject_id
@@ -153,7 +153,7 @@ final class ExamService
     {
         $pdo = Database::connection();
         $stmt = $pdo->prepare(
-            'SELECT q.*, sa.selected_option, sa.is_correct, s.name_az AS subject_name
+            'SELECT q.*, sa.selected_option, sa.is_correct, s.name_az AS subject_name, s.name_ru AS subject_name_ru
              FROM exam_sessions es
              JOIN exam_questions eq ON eq.exam_id = es.exam_id
              JOIN questions q ON q.id = eq.question_id

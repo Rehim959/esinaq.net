@@ -1,12 +1,12 @@
 <div class="page">
-    <a href="<?= url('/admin/imtahanlar') ?>" class="btn btn-ghost btn-sm">← Geri</a>
+    <a href="<?= url('/admin/imtahanlar') ?>" class="btn btn-ghost btn-sm">← <?= e(__('back')) ?></a>
     <div class="info-strip">
         <strong><?= e($exam['title']) ?></strong>
         <span class="status status-<?= e($exam['status']) ?>"><?= e($exam['status']) ?></span>
-        <span><?= (int)$exam['grade'] ?>-ci · <?= e(strtoupper($exam['sector'])) ?></span>
+        <span><?= e(grade_label((int)$exam['grade'])) ?> · <?= e(strtoupper($exam['sector'])) ?></span>
     </div>
     <table class="table">
-        <thead><tr><th>Uşaq</th><th>Status</th><th>Başladı</th><th>Bitdi</th><th>Bal</th></tr></thead>
+        <thead><tr><th><?= e(__('child')) ?></th><th><?= e(__('status')) ?></th><th><?= e(__('started')) ?></th><th><?= e(__('finished')) ?></th><th><?= e(__('score')) ?></th></tr></thead>
         <tbody>
         <?php foreach ($sessions as $s): ?>
             <tr>
@@ -17,7 +17,7 @@
                 <td><?= $s['percentage'] !== null ? e((string)$s['percentage']) . '% (' . e($s['letter_grade']) . ')' : '—' ?></td>
             </tr>
         <?php endforeach; ?>
-        <?php if (empty($sessions)): ?><tr><td colspan="5" class="muted">Hələ sessiya yoxdur</td></tr><?php endif; ?>
+        <?php if (empty($sessions)): ?><tr><td colspan="5" class="muted"><?= e(__('no_sessions')) ?></td></tr><?php endif; ?>
         </tbody>
     </table>
 </div>

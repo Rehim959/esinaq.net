@@ -94,8 +94,21 @@ function clear_old(): void
     \App\Core\Session::remove('_old');
 }
 
+function __(string $key, array $replace = []): string
+{
+    return \App\Core\Lang::get($key, $replace);
+}
+
+function locale(): string
+{
+    return \App\Core\Lang::locale();
+}
+
 function grade_label(int $grade): string
 {
+    if (locale() === 'ru') {
+        return __("grade_n", ['n' => $grade]);
+    }
     $suffix = match ($grade) {
         3, 4 => '-cü',
         6 => '-cı',
@@ -107,7 +120,7 @@ function grade_label(int $grade): string
 
 function sector_label(string $sector): string
 {
-    return $sector === 'ru' ? 'Rus sektoru' : 'Azərbaycan sektoru';
+    return $sector === 'ru' ? __('sector_ru') : __('sector_az');
 }
 
 function letter_grade(float $percentage): string
@@ -124,14 +137,8 @@ function letter_grade(float $percentage): string
 
 function grade_message(string $letter): string
 {
-    return match ($letter) {
-        'A' => 'Əla! Nəticəniz möhtəşəmdir.',
-        'B' => 'Yaxşı! Belə davam edin.',
-        'C' => 'Orta. Bir az daha çalışsanız daha yaxşı olacaq.',
-        'D' => 'Qane bəxş. Zəif mövzular üzrə təkrar edin.',
-        'E' => 'Zəif. İmtahandan keçmədiniz; daha diqqətli oxumağınız tövsiyə olunur.',
-        default => 'Kəskin zəif — müəllimlə əlaqə saxlayın.',
-    };
+    $key = 'grade_msg_' . strtoupper($letter);
+    return __($key);
 }
 
 function generate_token(int $bytes = 24): string
@@ -161,13 +168,37 @@ function grades_list(): array
 function subjects_map(): array
 {
     return [
-        'azerbaycan_dili' => 'Azərbaycan dili',
-        'edebiyyat' => 'Ədəbiyyat',
-        'riyaziyyat' => 'Riyaziyyat',
-        'tarix' => 'Tarix',
-        'cografiya' => 'Coğrafiya',
-        'rus_dili' => 'Rus dili',
-        'ingilis_dili' => 'İngilis dili',
-        'mentiq' => 'Məntiq',
+        'azerbaycan_dili' => __('subj_azerbaycan_dili'),
+        'edebiyyat' => __('subj_edebiyyat'),
+        'riyaziyyat' => __('subj_riyaziyyat'),
+        'tarix' => __('subj_tarix'),
+        'cografiya' => __('subj_cografiya'),
+        'rus_dili' => __('subj_rus_dili'),
+        'ingilis_dili' => __('subj_ingilis_dili'),
+        'mentiq' => __('subj_mentiq'),
     ];
+}
+
+function subject_name(array $subject): string
+{
+    return locale() === 'ru'
+        ? (string) ($subject['name_ru'] ?? $subject['name_az'] ?? '')
+        : (string) ($subject['name_az'] ?? '');
+}
+
+function lang_switcher(): string
+{
+    $current = locale();
+    $azClass = $current === 'az' ? 'active' : '';
+    $ruClass = $current === 'ru' ? 'active' : '';
+    $back = $_SERVER['REQUEST_URI'] ?? '/';
+    $backPath = parse_url($back, PHP_URL_PATH) ?: '/';
+    if (preg_match('#^/dil/(az|ru)$#', $backPath)) {
+        $backPath = '/';
+    }
+    $q = '?back=' . urlencode($backPath);
+    return '<div class="lang-switch" role="navigation" aria-label="' . e(__('language')) . '">'
+        . '<a class="' . $azClass . '" href="' . e(url('/dil/az' . $q)) . '">AZ</a>'
+        . '<a class="' . $ruClass . '" href="' . e(url('/dil/ru' . $q)) . '">RU</a>'
+        . '</div>';
 }

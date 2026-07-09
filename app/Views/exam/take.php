@@ -5,7 +5,7 @@ $csrf = \App\Core\Session::csrfToken();
 ?>
 <div class="exam-shell" data-session="<?= (int)$session['id'] ?>" data-token="<?= e($token) ?>" data-ends="<?= (int)$endsAt ?>">
     <aside class="exam-left">
-        <h3>Cavablar</h3>
+        <h3><?= e(__('answers')) ?></h3>
         <ul class="answered-list" id="answeredList">
             <?php foreach ($questions as $i => $item): ?>
                 <?php $sel = $answerMap[(int)$item['id']] ?? null; ?>
@@ -26,12 +26,13 @@ $csrf = \App\Core\Session::csrfToken();
         </div>
 
         <?php if ($q): ?>
+            <?php $subjName = locale() === 'ru' ? ($q['subject_name_ru'] ?? $q['subject_name']) : $q['subject_name']; ?>
             <div class="question-box" id="questionBox"
                  data-qid="<?= (int)$q['id'] ?>"
                  data-index="<?= (int)$currentIndex ?>">
                 <div class="q-meta">
-                    <span>Sual <?= $currentIndex + 1 ?> / <?= $total ?></span>
-                    <span class="subject-tag"><?= e($q['subject_name']) ?></span>
+                    <span><?= e(__('question_n_of', ['n' => $currentIndex + 1, 'total' => $total])) ?></span>
+                    <span class="subject-tag"><?= e($subjName) ?></span>
                 </div>
                 <h2 class="q-title"><?= e($q['question_text']) ?></h2>
                 <div class="options" id="options">
@@ -48,14 +49,14 @@ $csrf = \App\Core\Session::csrfToken();
                     <?php endforeach; ?>
                 </div>
                 <div class="exam-nav">
-                    <a class="btn btn-ghost" href="?q=<?= max(0, $currentIndex - 1) ?>" <?= $currentIndex === 0 ? 'style="visibility:hidden"' : '' ?>>← Əvvəlki</a>
-                    <a class="btn btn-ghost" href="?q=<?= min($total - 1, $currentIndex + 1) ?>">Keç</a>
+                    <a class="btn btn-ghost" href="?q=<?= max(0, $currentIndex - 1) ?>" <?= $currentIndex === 0 ? 'style="visibility:hidden"' : '' ?>>← <?= e(__('previous')) ?></a>
+                    <a class="btn btn-ghost" href="?q=<?= min($total - 1, $currentIndex + 1) ?>"><?= e(__('skip')) ?></a>
                     <?php if ($currentIndex < $total - 1): ?>
-                        <a class="btn" href="?q=<?= $currentIndex + 1 ?>">Növbəti →</a>
+                        <a class="btn" href="?q=<?= $currentIndex + 1 ?>"><?= e(__('next')) ?> →</a>
                     <?php else: ?>
-                        <form method="post" action="<?= url('/imtahan/' . $token . '/teslim/' . $session['id']) ?>" onsubmit="return confirm('İmtahanı təslim etmək istəyirsiniz?')">
+                        <form method="post" action="<?= url('/imtahan/' . $token . '/teslim/' . $session['id']) ?>" onsubmit="return confirm(<?= json_encode(__('submit_confirm'), JSON_UNESCAPED_UNICODE) ?>)">
                             <?= csrf_field() ?>
-                            <button class="btn btn-danger" type="submit">Təslim et</button>
+                            <button class="btn btn-danger" type="submit"><?= e(__('submit_exam')) ?></button>
                         </form>
                     <?php endif; ?>
                 </div>
@@ -64,17 +65,17 @@ $csrf = \App\Core\Session::csrfToken();
     </section>
 
     <aside class="exam-right">
-        <div class="timer-side" id="timerSide"><?= (int)ceil($remainingSeconds / 60) ?> dəq</div>
-        <h3>Sual xəritəsi</h3>
+        <div class="timer-side" id="timerSide"><?= (int)ceil($remainingSeconds / 60) ?> <?= e(__('min_short')) ?></div>
+        <h3><?= e(__('question_map')) ?></h3>
         <div class="q-map">
             <?php foreach ($questions as $i => $item): ?>
                 <?php $answered = isset($answerMap[(int)$item['id']]); ?>
                 <a href="?q=<?= $i ?>" class="q-dot <?= $answered ? 'done' : '' ?> <?= $i === $currentIndex ? 'current' : '' ?>"><?= $i + 1 ?></a>
             <?php endforeach; ?>
         </div>
-        <form method="post" action="<?= url('/imtahan/' . $token . '/teslim/' . $session['id']) ?>" onsubmit="return confirm('İmtahanı təslim etmək istəyirsiniz?')">
+        <form method="post" action="<?= url('/imtahan/' . $token . '/teslim/' . $session['id']) ?>" onsubmit="return confirm(<?= json_encode(__('submit_confirm'), JSON_UNESCAPED_UNICODE) ?>)">
             <?= csrf_field() ?>
-            <button class="btn btn-block btn-danger" type="submit">Təslim et</button>
+            <button class="btn btn-block btn-danger" type="submit"><?= e(__('submit_exam')) ?></button>
         </form>
     </aside>
 </div>
@@ -83,12 +84,11 @@ $csrf = \App\Core\Session::csrfToken();
 (function () {
     const shell = document.querySelector('.exam-shell');
     if (!shell) return;
-    const token = shell.dataset.token;
-    const sessionId = shell.dataset.session;
     const endsAt = parseInt(shell.dataset.ends, 10) * 1000;
     const csrf = <?= json_encode($csrf) ?>;
     const answerUrl = <?= json_encode(url('/imtahan/' . $token . '/cavab/' . $session['id'])) ?>;
     const resultUrl = <?= json_encode(url('/imtahan/' . $token . '/netice/' . $session['id'])) ?>;
+    const minLabel = <?= json_encode(__('min_short'), JSON_UNESCAPED_UNICODE) ?>;
 
     function pad(n) { return String(n).padStart(2, '0'); }
     function tick() {
@@ -99,7 +99,7 @@ $csrf = \App\Core\Session::csrfToken();
         const el = document.getElementById('timer');
         if (el) el.textContent = pad(h) + ':' + pad(m) + ':' + pad(s);
         const side = document.getElementById('timerSide');
-        if (side) side.textContent = Math.ceil(left / 60) + ' dəq';
+        if (side) side.textContent = Math.ceil(left / 60) + ' ' + minLabel;
         if (left <= 0) {
             window.location.href = resultUrl;
         }
@@ -136,12 +136,6 @@ $csrf = \App\Core\Session::csrfToken();
             const dots = document.querySelectorAll('.q-dot');
             if (dots[idx]) dots[idx].classList.add('done');
         });
-    });
-
-    document.addEventListener('visibilitychange', () => {
-        if (document.hidden) {
-            console.warn('Tab dəyişildi');
-        }
     });
 })();
 </script>

@@ -18,13 +18,13 @@ final class AdminController
         if (Auth::adminId()) {
             redirect('/admin');
         }
-        View::render('admin/login', ['title' => 'Admin girişi'], 'layouts/admin_auth');
+        View::render('admin/login', ['title' => __('admin_login')], 'layouts/admin_auth');
     }
 
     public function login(): void
     {
         if (!Session::verifyCsrf($_POST['_csrf'] ?? null)) {
-            Session::flash('error', 'Təhlükəsizlik xətası.');
+            Session::flash('error', __('err_csrf_short'));
             redirect('/admin/login');
         }
 
@@ -32,7 +32,7 @@ final class AdminController
         $password = (string) ($_POST['password'] ?? '');
 
         if (!Auth::attemptAdmin($email, $password)) {
-            Session::flash('error', 'E-poçt və ya şifrə yanlışdır.');
+            Session::flash('error', __('err_login'));
             redirect('/admin/login');
         }
 
@@ -69,7 +69,7 @@ final class AdminController
         )->fetchAll();
 
         View::render('admin/dashboard', [
-            'title' => 'Admin panel',
+            'title' => __('admin_panel'),
             'stats' => $stats,
             'recent' => $recent,
         ], 'layouts/admin');
@@ -85,7 +85,7 @@ final class AdminController
         $sector = (string) ($_GET['sector'] ?? '');
         $subjectId = isset($_GET['subject_id']) ? (int) $_GET['subject_id'] : 0;
 
-        $sql = 'SELECT q.*, s.name_az AS subject_name FROM questions q JOIN subjects s ON s.id = q.subject_id WHERE 1=1';
+        $sql = 'SELECT q.*, s.name_az AS subject_name, s.name_ru AS subject_name_ru FROM questions q JOIN subjects s ON s.id = q.subject_id WHERE 1=1';
         $params = [];
         if ($grade > 0) {
             $sql .= ' AND q.grade = ?';
@@ -105,7 +105,7 @@ final class AdminController
         $stmt->execute($params);
 
         View::render('admin/questions', [
-            'title' => 'Sual bankı',
+            'title' => __('question_bank'),
             'questions' => $stmt->fetchAll(),
             'subjects' => $subjects,
             'filters' => compact('grade', 'sector', 'subjectId'),
@@ -120,7 +120,7 @@ final class AdminController
         $subjects = $pdo->query('SELECT * FROM subjects WHERE is_active = 1 ORDER BY sort_order')->fetchAll();
 
         View::render('admin/import_questions', [
-            'title' => 'Sualları əlavə et (Copy-Paste)',
+            'title' => __('add_question'),
             'subjects' => $subjects,
             'grades' => grades_list(),
         ], 'layouts/admin');
@@ -130,7 +130,7 @@ final class AdminController
     {
         Auth::requireAdmin();
         if (!Session::verifyCsrf($_POST['_csrf'] ?? null)) {
-            Session::flash('error', 'Təhlükəsizlik xətası.');
+            Session::flash('error', __('err_csrf_short'));
             redirect('/admin/suallar/elave');
         }
 
@@ -140,7 +140,7 @@ final class AdminController
         $raw = (string) ($_POST['raw_text'] ?? '');
 
         if ($subjectId < 1 || $grade < 1 || $grade > 11 || !in_array($sector, ['az', 'ru'], true) || trim($raw) === '') {
-            Session::flash('error', 'Fənn, sinif, sektor və sual mətnini doldurun.');
+            Session::flash('error', __('err_import_fields'));
             redirect('/admin/suallar/elave');
         }
 
@@ -148,7 +148,7 @@ final class AdminController
         $parsed = $parser->parse($raw);
 
         if ($parsed === []) {
-            Session::flash('error', 'Heç bir sual tanınmadı. Formatı yoxlayın (A) B) C) D) və +C).');
+            Session::flash('error', __('err_import_parse'));
             redirect('/admin/suallar/elave');
         }
 
@@ -176,7 +176,7 @@ final class AdminController
             $count++;
         }
 
-        Session::flash('success', $count . ' sual uğurla əlavə olundu.');
+        Session::flash('success', __('ok_questions_imported', ['n' => (string) $count]));
         redirect('/admin/suallar?grade=' . $grade . '&sector=' . $sector . '&subject_id=' . $subjectId);
     }
 
@@ -184,11 +184,11 @@ final class AdminController
     {
         Auth::requireAdmin();
         if (!Session::verifyCsrf($_POST['_csrf'] ?? null)) {
-            Session::flash('error', 'Təhlükəsizlik xətası.');
+            Session::flash('error', __('err_csrf_short'));
             redirect('/admin/suallar');
         }
         Database::connection()->prepare('DELETE FROM questions WHERE id = ?')->execute([(int) $id]);
-        Session::flash('success', 'Sual silindi.');
+        Session::flash('success', __('ok_question_deleted'));
         redirect('/admin/suallar');
     }
 
@@ -203,7 +203,7 @@ final class AdminController
         )->fetchAll();
 
         View::render('admin/exams', [
-            'title' => 'İmtahanlar',
+            'title' => __('exams'),
             'exams' => $exams,
         ], 'layouts/admin');
     }
@@ -213,7 +213,7 @@ final class AdminController
         Auth::requireAdmin();
         $subjects = Database::connection()->query('SELECT * FROM subjects WHERE is_active = 1 ORDER BY sort_order')->fetchAll();
         View::render('admin/exam_create', [
-            'title' => 'İmtahan yarat',
+            'title' => __('create_exam'),
             'subjects' => $subjects,
             'grades' => grades_list(),
         ], 'layouts/admin');
@@ -223,7 +223,7 @@ final class AdminController
     {
         Auth::requireAdmin();
         if (!Session::verifyCsrf($_POST['_csrf'] ?? null)) {
-            Session::flash('error', 'Təhlükəsizlik xətası.');
+            Session::flash('error', __('err_csrf_short'));
             redirect('/admin/imtahanlar/yeni');
         }
 
@@ -237,7 +237,7 @@ final class AdminController
         $counts = $_POST['question_counts'] ?? [];
 
         if ($title === '' || $grade < 1 || $grade > 11 || !in_array($sector, ['az', 'ru'], true) || !is_array($subjectIds) || $subjectIds === []) {
-            Session::flash('error', 'Başlıq, sinif, sektor və ən azı bir fənn seçin.');
+            Session::flash('error', __('err_exam_create'));
             redirect('/admin/imtahanlar/yeni');
         }
 
@@ -257,7 +257,7 @@ final class AdminController
         }
 
         $picked = (new ExamService())->pickQuestions($examId);
-        Session::flash('success', "İmtahan yaradıldı. Bazadan {$picked} sual seçildi.");
+        Session::flash('success', __('ok_exam_created', ['n' => (string) $picked]));
         redirect('/admin/imtahanlar');
     }
 
@@ -271,7 +271,7 @@ final class AdminController
         $service = new ExamService();
         $count = $service->pickQuestions($examId);
         Database::connection()->prepare("UPDATE exams SET status = 'running' WHERE id = ?")->execute([$examId]);
-        Session::flash('success', "İmtahan başladı ({$count} sual).");
+        Session::flash('success', __('ok_exam_started', ['n' => (string) $count]));
         redirect('/admin/imtahanlar');
     }
 
@@ -282,7 +282,7 @@ final class AdminController
             redirect('/admin/imtahanlar');
         }
         Database::connection()->prepare("UPDATE exams SET status = 'finished' WHERE id = ?")->execute([(int) $id]);
-        Session::flash('success', 'İmtahan bitirildi.');
+        Session::flash('success', __('ok_exam_finished'));
         redirect('/admin/imtahanlar');
     }
 
@@ -308,7 +308,7 @@ final class AdminController
         $sessions->execute([$examId]);
 
         View::render('admin/exam_monitor', [
-            'title' => 'Canlı monitorinq',
+            'title' => __('live_monitor'),
             'exam' => $examRow,
             'sessions' => $sessions->fetchAll(),
         ], 'layouts/admin');
@@ -323,8 +323,172 @@ final class AdminController
         )->fetchAll();
 
         View::render('admin/parents', [
-            'title' => 'Valideynlər',
+            'title' => __('parents'),
             'parents' => $rows,
         ], 'layouts/admin');
+    }
+
+    public function parentShow(string $id): void
+    {
+        Auth::requireAdmin();
+        $pdo = Database::connection();
+        $parentId = (int) $id;
+
+        $stmt = $pdo->prepare('SELECT * FROM parents WHERE id = ?');
+        $stmt->execute([$parentId]);
+        $parent = $stmt->fetch();
+        if (!$parent) {
+            Session::flash('error', __('err_parent_not_found'));
+            redirect('/admin/valideynler');
+        }
+
+        $children = $pdo->prepare('SELECT * FROM children WHERE parent_id = ? ORDER BY id DESC');
+        $children->execute([$parentId]);
+        $kids = $children->fetchAll();
+
+        $sessions = $pdo->prepare(
+            'SELECT es.*, e.title, c.first_name, c.last_name
+             FROM exam_sessions es
+             JOIN exams e ON e.id = es.exam_id
+             JOIN children c ON c.id = es.child_id
+             WHERE c.parent_id = ?
+             ORDER BY es.finished_at DESC, es.id DESC
+             LIMIT 50'
+        );
+        $sessions->execute([$parentId]);
+
+        View::render('admin/parent_show', [
+            'title' => $parent['first_name'] . ' ' . $parent['last_name'],
+            'parent' => $parent,
+            'children' => $kids,
+            'sessions' => $sessions->fetchAll(),
+        ], 'layouts/admin');
+    }
+
+    public function resetParentPassword(string $id): void
+    {
+        Auth::requireAdmin();
+        if (!Session::verifyCsrf($_POST['_csrf'] ?? null)) {
+            Session::flash('error', __('err_csrf_short'));
+            redirect('/admin/valideynler');
+        }
+
+        $parentId = (int) $id;
+        $newPass = trim((string) ($_POST['new_password'] ?? ''));
+        if (strlen($newPass) < 6) {
+            Session::flash('error', __('err_password_len'));
+            redirect('/admin/valideyn/' . $parentId);
+        }
+
+        $pdo = Database::connection();
+        $stmt = $pdo->prepare('SELECT id, email FROM parents WHERE id = ?');
+        $stmt->execute([$parentId]);
+        $parent = $stmt->fetch();
+        if (!$parent) {
+            Session::flash('error', __('err_parent_not_found'));
+            redirect('/admin/valideynler');
+        }
+
+        $pdo->prepare('UPDATE parents SET password_hash = ? WHERE id = ?')
+            ->execute([password_hash($newPass, PASSWORD_DEFAULT), $parentId]);
+
+        Session::flash('success', __('ok_parent_password_reset', ['email' => $parent['email'], 'password' => $newPass]));
+        redirect('/admin/valideyn/' . $parentId);
+    }
+
+    public function deleteParent(string $id): void
+    {
+        Auth::requireAdmin();
+        if (!Session::verifyCsrf($_POST['_csrf'] ?? null)) {
+            Session::flash('error', __('err_csrf_short'));
+            redirect('/admin/valideynler');
+        }
+
+        $parentId = (int) $id;
+        Database::connection()->prepare('DELETE FROM parents WHERE id = ?')->execute([$parentId]);
+        Session::flash('success', __('ok_parent_deleted'));
+        redirect('/admin/valideynler');
+    }
+
+    public function children(): void
+    {
+        Auth::requireAdmin();
+        $rows = Database::connection()->query(
+            'SELECT c.*, p.first_name AS parent_first, p.last_name AS parent_last, p.email AS parent_email
+             FROM children c
+             JOIN parents p ON p.id = c.parent_id
+             ORDER BY c.id DESC LIMIT 300'
+        )->fetchAll();
+
+        View::render('admin/children', [
+            'title' => __('children_list'),
+            'children' => $rows,
+        ], 'layouts/admin');
+    }
+
+    public function resetChildPassword(string $id): void
+    {
+        Auth::requireAdmin();
+        if (!Session::verifyCsrf($_POST['_csrf'] ?? null)) {
+            Session::flash('error', __('err_csrf_short'));
+            redirect('/admin/usaqlar');
+        }
+
+        $childId = (int) $id;
+        $pdo = Database::connection();
+        $stmt = $pdo->prepare('SELECT * FROM children WHERE id = ?');
+        $stmt->execute([$childId]);
+        $child = $stmt->fetch();
+        if (!$child) {
+            Session::flash('error', __('err_child_not_found'));
+            redirect('/admin/usaqlar');
+        }
+
+        $custom = trim((string) ($_POST['new_password'] ?? ''));
+        $hint = $custom !== '' ? $custom : child_password($child['first_name'], $child['birth_date']);
+        $newToken = generate_token(16);
+
+        $pdo->prepare('UPDATE children SET password_hint = ?, access_token = ? WHERE id = ?')
+            ->execute([$hint, $newToken, $childId]);
+
+        Session::flash('success', __('ok_child_password_reset', [
+            'name' => $child['first_name'],
+            'password' => $hint,
+            'link' => url('/imtahan/' . $newToken),
+        ]));
+
+        $back = (string) ($_POST['back'] ?? '');
+        if ($back === 'parent') {
+            redirect('/admin/valideyn/' . $child['parent_id']);
+        }
+        redirect('/admin/usaqlar');
+    }
+
+    public function deleteChild(string $id): void
+    {
+        Auth::requireAdmin();
+        if (!Session::verifyCsrf($_POST['_csrf'] ?? null)) {
+            Session::flash('error', __('err_csrf_short'));
+            redirect('/admin/usaqlar');
+        }
+
+        $childId = (int) $id;
+        $pdo = Database::connection();
+        $stmt = $pdo->prepare('SELECT parent_id FROM children WHERE id = ?');
+        $stmt->execute([$childId]);
+        $child = $stmt->fetch();
+        if (!$child) {
+            Session::flash('error', __('err_child_not_found'));
+            redirect('/admin/usaqlar');
+        }
+
+        $pdo->prepare('DELETE FROM children WHERE id = ?')->execute([$childId]);
+        Session::flash('success', __('ok_child_deleted'));
+
+        $back = (string) ($_POST['back'] ?? '');
+        if ($back === 'parent') {
+            redirect('/admin/valideyn/' . $child['parent_id']);
+        }
+        redirect('/admin/usaqlar');
     }
 }

@@ -1,10 +1,10 @@
 <div class="auth-wrap">
     <form class="auth-card" method="post" action="<?= url('/sifremi-unutdum') ?>">
         <?= csrf_field() ?>
-        <h1>Şifrəni unutdum</h1>
-        <p class="muted">E-poçtunuza <strong>esinaq@esinaq.net</strong> ünvanından bərpa linki göndəriləcək.</p>
-        <label>E-poçt<input type="email" name="email" required></label>
-        <button class="btn btn-block" type="submit">Bərpa linki göndər</button>
-        <p class="center muted"><a href="<?= url('/valideyn/giris') ?>">Girişə qayıt</a></p>
+        <h1><?= e(__('forgot_password')) ?></h1>
+        <p class="muted"><?= __('forgot_lead', ['email' => '<strong>esinaq@esinaq.net</strong>']) ?></p>
+        <label><?= e(__('email')) ?><input type="email" name="email" required></label>
+        <button class="btn btn-block" type="submit"><?= e(__('send_reset_link')) ?></button>
+        <p class="center muted"><a href="<?= url('/valideyn/giris') ?>"><?= e(__('back_to_login')) ?></a></p>
     </form>
 </div>

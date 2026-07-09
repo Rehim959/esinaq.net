@@ -1,7 +1,7 @@
 <div class="auth-wrap">
     <div class="auth-card">
-        <h1>Link etibarsızdır</h1>
-        <p class="muted">Bu imtahan linki mövcud deyil və ya deaktiv edilib. Valideyninizlə əlaqə saxlayın.</p>
-        <a class="btn" href="<?= url('/') ?>">Ana səhifə</a>
+        <h1><?= e(__('invalid_link_title')) ?></h1>
+        <p class="muted"><?= e(__('invalid_link_text')) ?></p>
+        <a class="btn" href="<?= url('/') ?>"><?= e(__('go_home')) ?></a>
     </div>
 </div>

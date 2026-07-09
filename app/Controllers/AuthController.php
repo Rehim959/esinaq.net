@@ -17,13 +17,13 @@ final class AuthController
         if (Auth::parentId()) {
             redirect('/valideyn');
         }
-        View::render('auth/register', ['title' => 'Valideyn qeydiyyatı']);
+        View::render('auth/register', ['title' => __('parent_register_title')]);
     }
 
     public function register(): void
     {
         if (!Session::verifyCsrf($_POST['_csrf'] ?? null)) {
-            Session::flash('error', 'Təhlükəsizlik xətası. Yenidən cəhd edin.');
+            Session::flash('error', __('err_csrf'));
             redirect('/qeydiyyat');
         }
 
@@ -37,22 +37,22 @@ final class AuthController
         flash_old($_POST);
 
         if ($first === '' || $last === '' || $email === '' || $password === '') {
-            Session::flash('error', 'Bütün məcburi sahələri doldurun.');
+            Session::flash('error', __('err_required'));
             redirect('/qeydiyyat');
         }
 
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            Session::flash('error', 'E-poçt ünvanı düzgün deyil.');
+            Session::flash('error', __('err_email'));
             redirect('/qeydiyyat');
         }
 
         if (strlen($password) < 6) {
-            Session::flash('error', 'Şifrə ən azı 6 simvol olmalıdır.');
+            Session::flash('error', __('err_password_len'));
             redirect('/qeydiyyat');
         }
 
         if ($password !== $password2) {
-            Session::flash('error', 'Şifrələr uyğun gəlmir.');
+            Session::flash('error', __('err_password_match'));
             redirect('/qeydiyyat');
         }
 
@@ -60,7 +60,7 @@ final class AuthController
         $check = $pdo->prepare('SELECT id FROM parents WHERE email = ?');
         $check->execute([$email]);
         if ($check->fetch()) {
-            Session::flash('error', 'Bu e-poçt artıq qeydiyyatdan keçib.');
+            Session::flash('error', __('err_email_exists'));
             redirect('/qeydiyyat');
         }
 
@@ -74,7 +74,7 @@ final class AuthController
         (new MailService())->welcomeParent($email, $first);
 
         Auth::attemptParent($email, $password);
-        Session::flash('success', 'Qeydiyyat uğurlu oldu! Övladlarınızı əlavə edə bilərsiniz.');
+        Session::flash('success', __('ok_register'));
         redirect('/valideyn');
     }
 
@@ -83,13 +83,13 @@ final class AuthController
         if (Auth::parentId()) {
             redirect('/valideyn');
         }
-        View::render('auth/login', ['title' => 'Valideyn girişi']);
+        View::render('auth/login', ['title' => __('parent_login')]);
     }
 
     public function login(): void
     {
         if (!Session::verifyCsrf($_POST['_csrf'] ?? null)) {
-            Session::flash('error', 'Təhlükəsizlik xətası.');
+            Session::flash('error', __('err_csrf_short'));
             redirect('/valideyn/giris');
         }
 
@@ -97,7 +97,7 @@ final class AuthController
         $password = (string) ($_POST['password'] ?? '');
 
         if (!Auth::attemptParent($email, $password)) {
-            Session::flash('error', 'E-poçt və ya şifrə yanlışdır.');
+            Session::flash('error', __('err_login'));
             flash_old(['email' => $email]);
             redirect('/valideyn/giris');
         }
@@ -114,13 +114,13 @@ final class AuthController
 
     public function showForgot(): void
     {
-        View::render('auth/forgot', ['title' => 'Şifrəni unutdum']);
+        View::render('auth/forgot', ['title' => __('forgot_password')]);
     }
 
     public function forgot(): void
     {
         if (!Session::verifyCsrf($_POST['_csrf'] ?? null)) {
-            Session::flash('error', 'Təhlükəsizlik xətası.');
+            Session::flash('error', __('err_csrf_short'));
             redirect('/sifremi-unutdum');
         }
 
@@ -136,20 +136,20 @@ final class AuthController
             (new MailService())->passwordReset($email, $token);
         }
 
-        Session::flash('success', 'Əgər bu e-poçt sistemdə varsa, bərpa linki göndərildi. Poçt qutunuzu yoxlayın.');
+        Session::flash('success', __('ok_reset_sent'));
         redirect('/sifremi-unutdum');
     }
 
     public function showReset(): void
     {
         $token = (string) ($_GET['token'] ?? '');
-        View::render('auth/reset', ['title' => 'Şifrə bərpası', 'token' => $token]);
+        View::render('auth/reset', ['title' => __('new_password'), 'token' => $token]);
     }
 
     public function reset(): void
     {
         if (!Session::verifyCsrf($_POST['_csrf'] ?? null)) {
-            Session::flash('error', 'Təhlükəsizlik xətası.');
+            Session::flash('error', __('err_csrf_short'));
             redirect('/sifremi-unutdum');
         }
 
@@ -158,7 +158,7 @@ final class AuthController
         $password2 = (string) ($_POST['password_confirmation'] ?? '');
 
         if (strlen($password) < 6 || $password !== $password2) {
-            Session::flash('error', 'Şifrə ən azı 6 simvol olmalı və təkrarlanmalıdır.');
+            Session::flash('error', __('err_password_reset'));
             redirect('/sifre-berpa?token=' . urlencode($token));
         }
 
@@ -168,7 +168,7 @@ final class AuthController
         $row = $stmt->fetch();
 
         if (!$row) {
-            Session::flash('error', 'Link etibarsızdır və ya vaxtı bitib.');
+            Session::flash('error', __('err_reset_invalid'));
             redirect('/sifremi-unutdum');
         }
 
@@ -176,7 +176,7 @@ final class AuthController
         $pdo->prepare('UPDATE parents SET password_hash = ? WHERE email = ?')->execute([$hash, $row['email']]);
         $pdo->prepare('UPDATE password_resets SET used_at = NOW() WHERE id = ?')->execute([$row['id']]);
 
-        Session::flash('success', 'Şifrəniz yeniləndi. İndi daxil ola bilərsiniz.');
+        Session::flash('success', __('ok_password_updated'));
         redirect('/valideyn/giris');
     }
 }

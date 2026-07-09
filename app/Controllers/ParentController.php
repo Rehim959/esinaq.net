@@ -36,7 +36,7 @@ final class ParentController
         }
 
         View::render('parent/dashboard', [
-            'title' => 'Valideyn paneli',
+            'title' => __('parent_panel'),
             'children' => $kids,
             'stats' => $stats,
         ], 'layouts/parent');
@@ -46,7 +46,7 @@ final class ParentController
     {
         Auth::requireParent();
         View::render('parent/add_child', [
-            'title' => 'Uşaq əlavə et',
+            'title' => __('add_child'),
             'grades' => grades_list(),
         ], 'layouts/parent');
     }
@@ -55,19 +55,26 @@ final class ParentController
     {
         Auth::requireParent();
         if (!Session::verifyCsrf($_POST['_csrf'] ?? null)) {
-            Session::flash('error', 'Təhlükəsizlik xətası.');
+            Session::flash('error', __('err_csrf_short'));
             redirect('/valideyn/usaq-elave');
         }
 
         $first = trim((string) ($_POST['first_name'] ?? ''));
         $last = trim((string) ($_POST['last_name'] ?? ''));
-        $birth = (string) ($_POST['birth_date'] ?? '');
+        $day = (int) ($_POST['birth_day'] ?? 0);
+        $month = (int) ($_POST['birth_month'] ?? 0);
+        $year = (int) ($_POST['birth_year'] ?? 0);
         $grade = (int) ($_POST['grade'] ?? 0);
         $sector = (string) ($_POST['sector'] ?? '');
         $gender = (string) ($_POST['gender'] ?? '');
 
+        $birth = '';
+        if ($day > 0 && $month > 0 && $year > 0 && checkdate($month, $day, $year)) {
+            $birth = sprintf('%04d-%02d-%02d', $year, $month, $day);
+        }
+
         if ($first === '' || $last === '' || $birth === '' || $grade < 1 || $grade > 11 || !in_array($sector, ['az', 'ru'], true) || !in_array($gender, ['boy', 'girl'], true)) {
-            Session::flash('error', 'Bütün sahələri düzgün doldurun.');
+            Session::flash('error', __('err_child_fields'));
             flash_old($_POST);
             redirect('/valideyn/usaq-elave');
         }
@@ -97,7 +104,7 @@ final class ParentController
         (new MailService())->childRegistered($p['email'], $p['first_name'], $child, $link);
 
         clear_old();
-        Session::flash('success', $first . ' əlavə olundu. Giriş məlumatları e-poçtunuza göndərildi.');
+        Session::flash('success', __('ok_child_added', ['name' => $first]));
         redirect('/valideyn');
     }
 
@@ -111,7 +118,7 @@ final class ParentController
         $child->execute([$childId, Auth::parentId()]);
         $kid = $child->fetch();
         if (!$kid) {
-            Session::flash('error', 'Uşaq tapılmadı.');
+            Session::flash('error', __('err_child_not_found'));
             redirect('/valideyn');
         }
 
@@ -136,19 +143,19 @@ final class ParentController
 
         // Subject weakness
         $weak = $pdo->prepare(
-            'SELECT s.name_az, AVG(CASE WHEN sa.is_correct = 1 THEN 100 ELSE 0 END) AS avg_pct, COUNT(*) AS total
+            'SELECT s.name_az, s.name_ru, AVG(CASE WHEN sa.is_correct = 1 THEN 100 ELSE 0 END) AS avg_pct, COUNT(*) AS total
              FROM student_answers sa
              JOIN exam_sessions es ON es.id = sa.session_id
              JOIN questions q ON q.id = sa.question_id
              JOIN subjects s ON s.id = q.subject_id
              WHERE es.child_id = ? AND es.status IN ("submitted","timed_out")
-             GROUP BY s.id, s.name_az
+             GROUP BY s.id, s.name_az, s.name_ru
              ORDER BY avg_pct ASC'
         );
         $weak->execute([$childId]);
 
         View::render('parent/child_results', [
-            'title' => $kid['first_name'] . ' — nəticələr',
+            'title' => __('child_results', ['name' => $kid['first_name']]),
             'child' => $kid,
             'sessions' => $list,
             'monthly' => $monthly->fetchAll(),
@@ -174,12 +181,12 @@ final class ParentController
         $session = $stmt->fetch();
 
         if (!$session || (int) $session['parent_id'] !== Auth::parentId()) {
-            Session::flash('error', 'Nəticə tapılmadı.');
+            Session::flash('error', __('err_result_not_found'));
             redirect('/valideyn');
         }
 
         if (!in_array($session['status'], ['submitted', 'timed_out'], true)) {
-            Session::flash('error', 'İmtahan hələ bitməyib.');
+            Session::flash('error', __('err_exam_not_finished'));
             redirect('/valideyn/usaq/' . $session['child_id']);
         }
 
@@ -187,7 +194,7 @@ final class ParentController
         $wrongOnly = array_values(array_filter($details, fn ($d) => $d['is_correct'] !== null && (int) $d['is_correct'] === 0));
 
         View::render('parent/session_detail', [
-            'title' => 'Səhv suallar',
+            'title' => __('wrong_questions'),
             'session' => $session,
             'wrong' => $wrongOnly,
         ], 'layouts/parent');

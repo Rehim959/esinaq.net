@@ -1,23 +1,24 @@
 <!DOCTYPE html>
-<html lang="az">
+<html lang="<?= e(locale()) ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= e($title ?? 'Valideyn paneli') ?> | eSınaq</title>
+    <title><?= e($title ?? __('parent_panel')) ?> | eSınaq</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= asset('css/app.css') ?>">
 </head>
 <body class="panel-body">
 <aside class="sidebar">
-    <a class="brand" href="<?= url('/valideyn') ?>">e<strong>Sınaq</strong></a>
+    <a class="brand" href="<?= url('/valideyn') ?>"><span class="brand-e">e</span><strong>Sınaq</strong></a>
     <nav>
-        <a href="<?= url('/valideyn') ?>" class="<?= str_contains($_SERVER['REQUEST_URI'] ?? '', '/valideyn') && !str_contains($_SERVER['REQUEST_URI'] ?? '', 'usaq') ? 'active' : '' ?>">İcmal</a>
-        <a href="<?= url('/valideyn/usaq-elave') ?>">Uşaq əlavə et</a>
-        <a href="<?= url('/') ?>">Ana səhifə</a>
+        <a href="<?= url('/valideyn') ?>"><?= e(__('overview')) ?></a>
+        <a href="<?= url('/valideyn/usaq-elave') ?>"><?= e(__('add_child')) ?></a>
+        <a href="<?= url('/') ?>"><?= e(__('home')) ?></a>
     </nav>
-    <form method="post" action="<?= url('/cixis') ?>" class="sidebar-logout"><?= csrf_field() ?><button type="submit">Çıxış</button></form>
+    <div class="sidebar-lang"><?= lang_switcher() ?></div>
+    <form method="post" action="<?= url('/cixis') ?>" class="sidebar-logout"><?= csrf_field() ?><button type="submit"><?= e(__('logout')) ?></button></form>
 </aside>
 <div class="panel-main">
     <header class="panel-top">
@@ -34,3 +35,5 @@
 </div>
 </body>
 </html>
+
+

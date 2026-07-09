@@ -13,6 +13,7 @@ $router = new Router();
 
 // Public
 $router->get('/', [HomeController::class, 'index']);
+$router->get('/dil/{locale}', [HomeController::class, 'setLanguage']);
 
 // Parent auth
 $router->get('/qeydiyyat', [AuthController::class, 'showRegister']);
@@ -58,5 +59,11 @@ $router->post('/admin/imtahanlar/baslat/{id}', [AdminController::class, 'startEx
 $router->post('/admin/imtahanlar/bitir/{id}', [AdminController::class, 'stopExam']);
 $router->get('/admin/imtahanlar/monitor/{id}', [AdminController::class, 'examMonitor']);
 $router->get('/admin/valideynler', [AdminController::class, 'parents']);
+$router->get('/admin/valideyn/{id}', [AdminController::class, 'parentShow']);
+$router->post('/admin/valideyn/sifre/{id}', [AdminController::class, 'resetParentPassword']);
+$router->post('/admin/valideyn/sil/{id}', [AdminController::class, 'deleteParent']);
+$router->get('/admin/usaqlar', [AdminController::class, 'children']);
+$router->post('/admin/usaq/sifre/{id}', [AdminController::class, 'resetChildPassword']);
+$router->post('/admin/usaq/sil/{id}', [AdminController::class, 'deleteChild']);
 
 return $router;

@@ -20,7 +20,7 @@ final class ExamController
         $child = $stmt->fetch();
 
         if (!$child) {
-            View::render('exam/invalid', ['title' => 'Link etibarsızdır'], 'layouts/exam');
+            View::render('exam/invalid', ['title' => __('invalid_link_title')], 'layouts/exam');
             return;
         }
 
@@ -30,7 +30,7 @@ final class ExamController
         }
 
         View::render('exam/login', [
-            'title' => 'İmtahana giriş',
+            'title' => __('exam_entry'),
             'child' => $child,
             'token' => $token,
         ], 'layouts/exam');
@@ -39,7 +39,7 @@ final class ExamController
     public function login(string $token): void
     {
         if (!Session::verifyCsrf($_POST['_csrf'] ?? null)) {
-            Session::flash('error', 'Təhlükəsizlik xətası.');
+            Session::flash('error', __('err_csrf_short'));
             redirect('/imtahan/' . $token);
         }
 
@@ -47,7 +47,7 @@ final class ExamController
         $child = Auth::attemptChild($token, $password);
 
         if (!$child) {
-            Session::flash('error', 'Şifrə yanlışdır. (Ad + doğum ili, məs: Samir2015)');
+            Session::flash('error', __('err_child_password'));
             redirect('/imtahan/' . $token);
         }
 
@@ -77,7 +77,7 @@ final class ExamController
         ]);
 
         View::render('exam/list', [
-            'title' => 'İmtahanlar',
+            'title' => __('exams'),
             'child' => $child,
             'token' => $token,
             'exams' => $exams->fetchAll(),
@@ -88,7 +88,7 @@ final class ExamController
     {
         $child = $this->requireChild($token);
         if (!Session::verifyCsrf($_POST['_csrf'] ?? null)) {
-            Session::flash('error', 'Təhlükəsizlik xətası.');
+            Session::flash('error', __('err_csrf_short'));
             redirect('/imtahan/' . $token . '/siyahi');
         }
         $examId = (int) $examId;
@@ -99,7 +99,7 @@ final class ExamController
         $examRow = $exam->fetch();
 
         if (!$examRow) {
-            Session::flash('error', 'İmtahan tapılmadı və ya aktiv deyil.');
+            Session::flash('error', __('err_exam_not_found'));
             redirect('/imtahan/' . $token . '/siyahi');
         }
 
@@ -220,7 +220,7 @@ final class ExamController
     {
         $child = $this->requireChild($token);
         if (!Session::verifyCsrf($_POST['_csrf'] ?? null)) {
-            Session::flash('error', 'Təhlükəsizlik xətası.');
+            Session::flash('error', __('err_csrf_short'));
             redirect('/imtahan/' . $token . '/siyahi');
         }
 
@@ -271,7 +271,7 @@ final class ExamController
         }
 
         View::render('exam/result', [
-            'title' => 'Nəticə',
+            'title' => __('result'),
             'child' => $child,
             'token' => $token,
             'session' => $session,
@@ -291,7 +291,7 @@ final class ExamController
         $child = $stmt->fetch();
 
         if (!$child) {
-            View::render('exam/invalid', ['title' => 'Link etibarsızdır'], 'layouts/exam');
+            View::render('exam/invalid', ['title' => __('invalid_link_title')], 'layouts/exam');
             exit;
         }
 

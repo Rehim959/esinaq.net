@@ -29,6 +29,7 @@ foreach (['DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_USER', 'DB_PASS', 'MAIL_HOST', 'M
 \date_default_timezone_set('Asia/Baku');
 
 \App\Core\Session::start();
+\App\Core\Lang::boot();
 
 // Ensure admin exists with correct password on first boot
 try {

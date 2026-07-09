@@ -1,27 +1,32 @@
 <!DOCTYPE html>
-<html lang="az">
+<html lang="<?= e(locale()) ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= e($title ?? 'eSınaq') ?></title>
+    <title><?= e($title ?? __('site_name')) ?></title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= asset('css/app.css') ?>">
 </head>
-<body>
+<body class="site-body">
 <header class="site-header">
     <div class="container header-inner">
-        <a class="brand" href="<?= url('/') ?>">e<strong>Sınaq</strong></a>
-        <nav class="nav">
+        <a class="brand" href="<?= url('/') ?>"><span class="brand-e">e</span><strong>Sınaq</strong></a>
+        <button class="nav-toggle" type="button" aria-label="Menu" id="navToggle" aria-expanded="false">
+            <span></span><span></span><span></span>
+        </button>
+        <nav class="nav" id="siteNav">
+            <?= lang_switcher() ?>
             <?php if (\App\Core\Auth::parentId()): ?>
-                <a href="<?= url('/valideyn') ?>">Panel</a>
-                <form method="post" action="<?= url('/cixis') ?>" class="inline-form"><?= csrf_field() ?><button type="submit" class="link-btn">Çıxış</button></form>
+                <a href="<?= url('/valideyn') ?>"><?= e(__('panel')) ?></a>
+                <form method="post" action="<?= url('/cixis') ?>" class="inline-form"><?= csrf_field() ?><button type="submit" class="link-btn"><?= e(__('logout')) ?></button></form>
             <?php elseif (\App\Core\Auth::adminId()): ?>
-                <a href="<?= url('/admin') ?>">Admin</a>
+                <a href="<?= url('/admin') ?>"><?= e(__('admin')) ?></a>
             <?php else: ?>
-                <a href="<?= url('/valideyn/giris') ?>">Giriş</a>
-                <a class="btn btn-sm" href="<?= url('/qeydiyyat') ?>">Qeydiyyat</a>
+                <a href="#niye-biz" class="nav-quiet"><?= e(__('why_us')) ?></a>
+                <a href="<?= url('/valideyn/giris') ?>" class="nav-link"><?= e(__('login')) ?></a>
+                <a class="btn btn-sm" href="<?= url('/qeydiyyat') ?>"><?= e(__('register')) ?></a>
             <?php endif; ?>
         </nav>
     </div>
@@ -39,10 +44,31 @@
 </main>
 
 <footer class="site-footer">
-    <div class="container footer-inner">
-        <div><strong>eSınaq</strong> — onlayn sınaq və yoxlama platforması</div>
-        <div><a href="mailto:esinaq@esinaq.net">esinaq@esinaq.net</a></div>
+    <div class="container footer-grid">
+        <div>
+            <div class="brand footer-brand"><span class="brand-e">e</span><strong>Sınaq</strong></div>
+            <p class="muted"><?= e(__('site_tagline')) ?></p>
+        </div>
+        <div>
+            <a href="mailto:esinaq@esinaq.net">esinaq@esinaq.net</a>
+        </div>
+        <div class="footer-legal">
+            <div><?= e(__('created_by')) ?></div>
+            <div><?= e(__('rights_reserved')) ?></div>
+        </div>
     </div>
 </footer>
+<script>
+(function () {
+    var btn = document.getElementById('navToggle');
+    var nav = document.getElementById('siteNav');
+    if (!btn || !nav) return;
+    btn.addEventListener('click', function () {
+        var open = nav.classList.toggle('open');
+        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        btn.classList.toggle('open', open);
+    });
+})();
+</script>
 </body>
 </html>

@@ -98,7 +98,12 @@ final class Auth
 
     public static function logout(): void
     {
+        $locale = Session::get('locale');
         Session::destroy();
         Session::start();
+        if (is_string($locale) && in_array($locale, ['az', 'ru'], true)) {
+            Session::set('locale', $locale);
+            Lang::setLocale($locale);
+        }
     }
 }
