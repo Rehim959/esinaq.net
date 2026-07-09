@@ -130,6 +130,7 @@ return [
     'hello_name_comma' => ':name, salam!',
     'no_active_exams_title' => 'Hazırda aktiv imtahan yoxdur',
     'no_active_exams_text' => 'Müəllim imtahanı başladanda burada görünəcək.',
+    'no_active_exams_mismatch' => 'Aktiv imtahan var, amma sizin sinif/sektor (:grade · :sector) ilə uyğun gəlmir. Valideyn panelində uşağın sinif və sektorunu yoxlayın.',
     'start_exam' => 'İmtahana başla',
     'view_result' => 'Nəticəyə bax',
     'answers' => 'Cavablar',

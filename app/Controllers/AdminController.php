@@ -320,7 +320,18 @@ final class AdminController
             $count = $service->pickQuestions($examId);
         }
 
-        $pdo->prepare("UPDATE exams SET status = 'running' WHERE id = ?")->execute([$examId]);
+        // Make exam visible immediately: open window from now (fix future starts_at)
+        $pdo->prepare(
+            "UPDATE exams SET
+                status = 'running',
+                starts_at = NOW(),
+                ends_at = CASE
+                    WHEN ends_at IS NULL OR ends_at <= NOW()
+                        THEN DATE_ADD(NOW(), INTERVAL GREATEST(duration_minutes, 60) MINUTE)
+                    ELSE ends_at
+                END
+             WHERE id = ?"
+        )->execute([$examId]);
         Session::flash('success', __('ok_exam_started', ['n' => (string) $count]));
         redirect('/admin/imtahanlar');
     }

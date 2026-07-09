@@ -31,6 +31,8 @@ final class Database
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES => false,
             ]);
+            // Keep MySQL NOW() aligned with app timezone (Asia/Baku)
+            self::$pdo->exec("SET time_zone = '+04:00'");
         } catch (PDOException $e) {
             http_response_code(500);
             if (env('APP_DEBUG')) {

@@ -10,7 +10,8 @@
     <?php if (empty($exams)): ?>
         <div class="empty-state">
             <h2><?= e(__('no_active_exams_title')) ?></h2>
-            <p><?= e(__('no_active_exams_text')) ?></p>
+            <p><?= e($emptyHint ?? __('no_active_exams_text')) ?></p>
+            <p class="muted tiny"><?= e(grade_label((int)$child['grade'])) ?> · <?= e(sector_label($child['sector'])) ?></p>
         </div>
     <?php else: ?>
         <div class="exam-cards">

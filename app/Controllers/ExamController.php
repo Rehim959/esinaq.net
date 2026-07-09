@@ -69,6 +69,7 @@ final class ExamController
         $child = $this->requireChild($token);
         $pdo = Database::connection();
 
+        // status=running means admin started it — show immediately for matching grade/sector
         $exams = $pdo->prepare(
             "SELECT e.*,
                 (SELECT es.status FROM exam_sessions es WHERE es.exam_id = e.id AND es.child_id = ? LIMIT 1) AS my_status,
@@ -79,7 +80,6 @@ final class ExamController
              WHERE e.status = 'running'
                AND e.grade = ?
                AND e.sector = ?
-               AND (e.starts_at IS NULL OR e.starts_at <= NOW())
                AND (e.ends_at IS NULL OR e.ends_at >= NOW())
              ORDER BY e.id DESC"
         );
@@ -88,11 +88,30 @@ final class ExamController
             $child['grade'], $child['sector'],
         ]);
 
+        $rows = $exams->fetchAll();
+
+        // Helpful hint when empty: maybe grade/sector mismatch or exam not started
+        $hint = null;
+        if ($rows === []) {
+            $anyRunning = $pdo->prepare("SELECT title, grade, sector, status, starts_at, ends_at FROM exams WHERE status = 'running' ORDER BY id DESC LIMIT 5");
+            $anyRunning->execute();
+            $running = $anyRunning->fetchAll();
+            if ($running === []) {
+                $hint = __('no_active_exams_text');
+            } else {
+                $hint = __('no_active_exams_mismatch', [
+                    'grade' => grade_label((int) $child['grade']),
+                    'sector' => sector_label((string) $child['sector']),
+                ]);
+            }
+        }
+
         View::render('exam/list', [
             'title' => __('exams'),
             'child' => $child,
             'token' => $token,
-            'exams' => $exams->fetchAll(),
+            'exams' => $rows,
+            'emptyHint' => $hint,
         ], 'layouts/exam');
     }
 
@@ -108,7 +127,6 @@ final class ExamController
 
         $exam = $pdo->prepare(
             "SELECT * FROM exams WHERE id = ? AND status = 'running' AND grade = ? AND sector = ?
-             AND (starts_at IS NULL OR starts_at <= NOW())
              AND (ends_at IS NULL OR ends_at >= NOW())"
         );
         $exam->execute([$examId, $child['grade'], $child['sector']]);
