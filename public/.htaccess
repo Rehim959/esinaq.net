@@ -1,8 +1,10 @@
 # eSınaq.net — public_html root
 DirectoryIndex index.php index.html
+AcceptPathInfo On
 
 <IfModule mod_rewrite.c>
 RewriteEngine On
+RewriteBase /
 
 # Force HTTPS (skip localhost)
 RewriteCond %{HTTP_HOST} !^localhost [NC]
@@ -16,7 +18,7 @@ RewriteRule (^|/)\. - [F,L]
 RewriteRule ^(app|database|routes|lang|storage)/ - [F,L]
 RewriteRule \.(env|sql|log|lock)$ - [F,L]
 
-# Front controller
+# Front controller (pretty URLs when rewrite works)
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^ index.php [L]

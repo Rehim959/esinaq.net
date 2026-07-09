@@ -120,18 +120,63 @@ function redirect(string $path): never
 {
     // Only allow relative app paths — block open redirects
     $safe = \App\Core\Security::safeRedirectPath($path);
-    header('Location: ' . app_base_url() . $safe);
+    header('Location: ' . url($safe));
     exit;
 }
 
+/**
+ * Build app URLs. Uses /index.php/... so shared hosting works
+ * even when Apache mod_rewrite / AllowOverride is disabled.
+ */
 function url(string $path = ''): string
 {
-    return app_base_url() . '/' . ltrim($path, '/');
+    $path = '/' . ltrim($path, '/');
+    if ($path === '/') {
+        return app_base_url() . '/';
+    }
+
+    // Keep query string if present (e.g. /sifre-berpa?token=...)
+    $query = '';
+    if (str_contains($path, '?')) {
+        [$path, $query] = explode('?', $path, 2);
+        $query = '?' . $query;
+    }
+
+    return app_base_url() . '/index.php' . $path . $query;
 }
 
 function asset(string $path): string
 {
-    return url('assets/' . ltrim($path, '/'));
+    // Static files are real files under /assets — no front controller
+    return app_base_url() . '/assets/' . ltrim($path, '/');
+}
+
+/** Resolve current request path for the router (pretty URL, PATH_INFO, or ?r=). */
+function request_path(): string
+{
+    if (isset($_GET['r']) && is_string($_GET['r']) && $_GET['r'] !== '') {
+        $path = '/' . ltrim($_GET['r'], '/');
+        return $path === '/' ? '/' : rtrim($path, '/');
+    }
+
+    if (!empty($_SERVER['PATH_INFO'])) {
+        $path = '/' . trim((string) $_SERVER['PATH_INFO'], '/');
+        return $path === '/' ? '/' : rtrim($path, '/') ?: '/';
+    }
+
+    $uri = (string) ($_SERVER['REQUEST_URI'] ?? '/');
+    $path = parse_url($uri, PHP_URL_PATH) ?: '/';
+
+    // /index.php/dil/az  or  /index.php
+    if (preg_match('#/index\.php(/.*)?$#', $path, $m)) {
+        $path = $m[1] ?? '/';
+        if ($path === '' || $path === false) {
+            $path = '/';
+        }
+    }
+
+    $path = '/' . trim($path, '/');
+    return $path === '/' ? '/' : rtrim($path, '/');
 }
 
 function csrf_field(): string
