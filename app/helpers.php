@@ -323,12 +323,11 @@ function lang_switcher(): string
     $current = locale();
     $azClass = $current === 'az' ? 'active' : '';
     $ruClass = $current === 'ru' ? 'active' : '';
-    $back = $_SERVER['REQUEST_URI'] ?? '/';
-    $backPath = parse_url($back, PHP_URL_PATH) ?: '/';
-    if (preg_match('#^/dil/(az|ru)$#', $backPath)) {
-        $backPath = '/';
+    $back = request_path();
+    if (preg_match('#^/dil/(az|ru)$#', $back)) {
+        $back = '/';
     }
-    $q = '?back=' . urlencode($backPath);
+    $q = '?back=' . urlencode($back);
     return '<div class="lang-switch" role="navigation" aria-label="' . e(__('language')) . '">'
         . '<a class="' . $azClass . '" href="' . e(url('/dil/az' . $q)) . '">AZ</a>'
         . '<a class="' . $ruClass . '" href="' . e(url('/dil/ru' . $q)) . '">RU</a>'
