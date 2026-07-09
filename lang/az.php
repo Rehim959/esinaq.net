@@ -141,6 +141,8 @@ return [
     'next' => 'Növbəti',
     'submit_exam' => 'Təslim et',
     'submit_confirm' => 'İmtahanı təslim etmək istəyirsiniz?',
+    'subjects_left_title' => 'Hələ baxılmayıb:',
+    'subjects_left_confirm' => "Bu fənlərdə cavablanmamış suallar var:\n:list\n\nYenə də təslim etmək istəyirsiniz? Xəritədən fənnə klikləyib suallara baxa bilərsiniz.",
     'result_ready' => ':name, nəticən hazırdır!',
     'correct_count' => ':n düzgün',
     'wrong_count' => ':n səhv',

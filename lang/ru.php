@@ -141,6 +141,8 @@ return [
     'next' => 'Следующий',
     'submit_exam' => 'Сдать',
     'submit_confirm' => 'Сдать экзамен?',
+    'subjects_left_title' => 'Ещё не просмотрено:',
+    'subjects_left_confirm' => "В этих предметах есть вопросы без ответа:\n:list\n\nВсё равно сдать? Можно открыть предмет на карте и проверить вопросы.",
     'result_ready' => ':name, ваш результат готов!',
     'correct_count' => ':n верно',
     'wrong_count' => ':n неверно',
