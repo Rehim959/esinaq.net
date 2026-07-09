@@ -1,4 +1,4 @@
-# eSınaq — Onlayn sınaq və yoxlama platforması
+# eSınaq.net — Onlayn sınaq və yoxlama platforması
 
 PHP + MySQL imtahan sistemi · Domain: **esinaq.net** · Hosting: azhosting.az
 

@@ -12,7 +12,7 @@ final class MailService
     public function send(string $to, string $subject, string $htmlBody): bool
     {
         $from = (string) env('MAIL_FROM', 'esinaq@esinaq.net');
-        $fromName = (string) env('MAIL_FROM_NAME', 'eSınaq');
+        $fromName = (string) env('MAIL_FROM_NAME', 'eSınaq.net');
         $host = (string) env('MAIL_HOST', 'localhost');
         $port = (int) env('MAIL_PORT', 587);
         $user = (string) env('MAIL_USER', '');
@@ -168,7 +168,7 @@ final class MailService
             </p>
             <p>Suallarınız olarsa, <strong>esinaq@esinaq.net</strong> ünvanına yazın.</p>'
         );
-        return $this->send($email, 'eSınaq — Qeydiyyatınız uğurludur!', $html);
+        return $this->send($email, 'eSınaq.net — Qeydiyyatınız uğurludur!', $html);
     }
 
     public function childRegistered(string $email, string $parentName, array $child, string $examLink): bool
@@ -188,7 +188,7 @@ final class MailService
             </p>
             <p style="font-size:13px;color:#666">Link: ' . e($examLink) . '</p>'
         );
-        return $this->send($email, e($child['first_name']) . ' — giriş məlumatları | eSınaq', $html);
+        return $this->send($email, e($child['first_name']) . ' — giriş məlumatları | eSınaq.net', $html);
     }
 
     public function passwordReset(string $email, string $token): bool
@@ -202,7 +202,7 @@ final class MailService
             </p>
             <p style="font-size:13px;color:#666">Əgər bu sorğunu siz göndərməmisinizsə, bu məktubu nəzərə almayın.</p>'
         );
-        return $this->send($email, 'eSınaq — Şifrə bərpası', $html);
+        return $this->send($email, 'eSınaq.net — Şifrə bərpası', $html);
     }
 
     public function examReminder(string $email, string $childName, string $examTitle, string $startsAt, string $link): bool
@@ -214,7 +214,7 @@ final class MailService
                 <a href="' . e($link) . '" style="background:#0B6E4F;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">İmtahana keç</a>
             </p>'
         );
-        return $this->send($email, \App\Core\Security::sanitizeHeaderValue('İmtahan xatırlatması: ' . $childName . ' | eSınaq'), $html);
+        return $this->send($email, \App\Core\Security::sanitizeHeaderValue('İmtahan xatırlatması: ' . $childName . ' | eSınaq.net'), $html);
     }
 
     private function wrap(string $title, string $body): string
@@ -225,7 +225,7 @@ final class MailService
         <tr><td align="center">
         <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.06)">
         <tr><td style="background:linear-gradient(135deg,#0B6E4F,#08A045);padding:28px 32px;color:#fff">
-            <div style="font-size:22px;font-weight:700;letter-spacing:-0.02em">eSınaq</div>
+            <div style="font-size:22px;font-weight:700;letter-spacing:-0.02em">eSınaq.net</div>
             <div style="opacity:.9;margin-top:4px;font-size:14px">Onlayn sınaq və yoxlama platforması</div>
         </td></tr>
         <tr><td style="padding:32px">
@@ -233,7 +233,7 @@ final class MailService
             <div style="color:#334;line-height:1.6;font-size:15px">' . $body . '</div>
         </td></tr>
         <tr><td style="padding:16px 32px 28px;color:#889;font-size:12px;border-top:1px solid #eef2f0">
-            © ' . date('Y') . ' eSınaq · esinaq@esinaq.net · <a href="' . e(url('/')) . '" style="color:#0B6E4F">esinaq.net</a>
+            © ' . date('Y') . ' eSınaq.net · esinaq@esinaq.net · <a href="' . e(url('/')) . '" style="color:#0B6E4F">esinaq.net</a>
         </td></tr>
         </table>
         </td></tr></table></body></html>';

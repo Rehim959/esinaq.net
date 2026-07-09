@@ -12,7 +12,7 @@
 <body class="site-body">
 <header class="site-header">
     <div class="container header-inner">
-        <a class="brand" href="<?= url('/') ?>"><span class="brand-e">e</span><strong>Sınaq</strong></a>
+        <a class="brand" href="<?= url('/') ?>"><?= brand_html('nav') ?></a>
         <button class="nav-toggle" type="button" aria-label="Menu" id="navToggle" aria-expanded="false">
             <span></span><span></span><span></span>
         </button>
@@ -46,7 +46,7 @@
 <footer class="site-footer">
     <div class="container footer-grid">
         <div>
-            <div class="brand footer-brand"><span class="brand-e">e</span><strong>Sınaq</strong></div>
+            <div class="brand footer-brand"><?= brand_html('nav') ?></div>
             <p class="muted"><?= e(__('site_tagline')) ?></p>
         </div>
         <div>

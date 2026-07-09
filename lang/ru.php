@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 return [
     // Common
-    'site_name' => 'eSınaq',
+    'site_name' => 'eSınaq.net',
     'site_tagline' => 'Онлайн-платформа тестов и проверок',
     'login' => 'Вход',
     'register' => 'Регистрация',
@@ -65,7 +65,7 @@ return [
     'change_language' => 'Сменить язык',
 
     // Home
-    'home_title' => 'eSınaq — Онлайн-платформа тестов',
+    'home_title' => 'eSınaq.net — Онлайн-платформа тестов',
     'home_headline' => 'Проверьте знания ваших детей онлайн',
     'home_lead' => '1–11 классы · Азербайджанский и русский секторы · Предметные тесты и ежемесячные отчёты',
     'parent_register' => 'Регистрация родителя',
@@ -261,7 +261,7 @@ return [
 
     // Why us / landing
     'why_us' => 'Почему мы?',
-    'why_eyebrow' => 'Преимущество esinaq.net',
+    'why_eyebrow' => 'Преимущество eSınaq.net',
     'why_title' => 'Что получают родители и дети?',
     'why_lead' => 'Не просто экзамен — ясный результат для семьи и мотивация для ребёнка.',
     'why_parent_title' => 'Выгода для родителей',

@@ -13,7 +13,7 @@ final class HomeController
     {
         if (!Lang::hasLocale()) {
             View::render('home/language', [
-                'title' => 'eSınaq',
+                'title' => brand_name(),
             ], null);
             return;
         }

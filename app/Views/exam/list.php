@@ -1,7 +1,7 @@
 <div class="exam-list-page container">
     <header class="exam-list-head">
         <div>
-            <div class="exam-brand"><span class="brand-e">e</span>Sınaq</div>
+            <div class="exam-brand"><?= brand_html('nav') ?></div>
             <h1><?= e(__('hello_name_comma', ['name' => $child['first_name']])) ?></h1>
             <p class="muted"><?= e(grade_label((int)$child['grade'])) ?> · <?= e(sector_label($child['sector'])) ?></p>
         </div>

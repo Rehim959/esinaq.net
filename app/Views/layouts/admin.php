@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= e($title ?? __('admin')) ?> | eSınaq</title>
+    <title><?= e($title ?? __('admin')) ?> | <?= e(brand_name()) ?></title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -11,7 +11,7 @@
 </head>
 <body class="panel-body">
 <aside class="sidebar sidebar-admin">
-    <a class="brand" href="<?= url('/admin') ?>"><span class="brand-e">e</span><strong>Sınaq</strong> Admin</a>
+    <a class="brand" href="<?= url('/admin') ?>"><?= brand_html('nav') ?> <span class="brand-admin">Admin</span></a>
     <nav>
         <a href="<?= url('/admin') ?>"><?= e(__('dashboard')) ?></a>
         <a href="<?= url('/admin/suallar') ?>"><?= e(__('question_bank')) ?></a>

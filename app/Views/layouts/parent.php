@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= e($title ?? __('parent_panel')) ?> | eSınaq</title>
+    <title><?= e($title ?? __('parent_panel')) ?> | <?= e(brand_name()) ?></title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -11,7 +11,7 @@
 </head>
 <body class="panel-body">
 <aside class="sidebar">
-    <a class="brand" href="<?= url('/valideyn') ?>"><span class="brand-e">e</span><strong>Sınaq</strong></a>
+    <a class="brand" href="<?= url('/valideyn') ?>"><?= brand_html('nav') ?></a>
     <nav>
         <a href="<?= url('/valideyn') ?>"><?= e(__('overview')) ?></a>
         <a href="<?= url('/valideyn/usaq-elave') ?>"><?= e(__('add_child')) ?></a>

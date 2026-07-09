@@ -55,6 +55,27 @@ function e(?string $value): string
     return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
+/** Display brand: eSınaq.net */
+function brand_name(): string
+{
+    return 'eSınaq.net';
+}
+
+/** HTML brand mark for headers / hero */
+function brand_html(string $variant = 'nav'): string
+{
+    $e = '<span class="brand-e">e</span>';
+    $name = '<strong class="brand-name">Sınaq</strong>';
+    $tld = '<span class="brand-tld">.net</span>';
+    if ($variant === 'hero') {
+        return '<span class="brand-lockup brand-lockup-hero">' . $e . $name . $tld . '</span>';
+    }
+    if ($variant === 'plain') {
+        return $e . 'Sınaq' . $tld;
+    }
+    return '<span class="brand-lockup">' . $e . $name . $tld . '</span>';
+}
+
 function redirect(string $path): never
 {
     // Only allow relative app paths — block open redirects

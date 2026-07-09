@@ -6,7 +6,7 @@
         <div class="hero-grain"></div>
     </div>
     <div class="container hero-content">
-        <p class="brand-mark"><span class="brand-e">e</span>Sınaq</p>
+        <p class="brand-mark"><?= brand_html('hero') ?></p>
         <h1 class="hero-headline"><?= e(__('home_headline')) ?></h1>
         <p class="hero-lead"><?= e(__('home_lead')) ?></p>
         <div class="hero-actions">

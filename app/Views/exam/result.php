@@ -1,6 +1,6 @@
 <div class="result-page container">
     <div class="result-hero">
-        <div class="exam-brand"><span class="brand-e">e</span>Sınaq</div>
+        <div class="exam-brand"><?= brand_html('nav') ?></div>
         <h1><?= e(__('result_ready', ['name' => $child['first_name']])) ?></h1>
         <div class="result-score">
             <div class="big-letter letter-<?= e($session['letter_grade']) ?>"><?= e($session['letter_grade']) ?></div>

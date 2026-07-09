@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 return [
     // Common
-    'site_name' => 'eSınaq',
+    'site_name' => 'eSınaq.net',
     'site_tagline' => 'Onlayn sınaq və yoxlama platforması',
     'login' => 'Giriş',
     'register' => 'Qeydiyyat',
@@ -65,7 +65,7 @@ return [
     'change_language' => 'Dili dəyiş',
 
     // Home
-    'home_title' => 'eSınaq — Onlayn sınaq platforması',
+    'home_title' => 'eSınaq.net — Onlayn sınaq platforması',
     'home_headline' => 'Uşaqlarınızın bilik səviyyəsini onlayn ölçün',
     'home_lead' => '1–11-ci siniflər · Azərbaycan və Rus sektorları · Fənn üzrə sınaqlar və aylıq hesabatlar',
     'parent_register' => 'Valideyn qeydiyyatı',
@@ -261,7 +261,7 @@ return [
 
     // Why us / landing
     'why_us' => 'Niyə biz?',
-    'why_eyebrow' => 'esinaq.net ilə fərq',
+    'why_eyebrow' => 'eSınaq.net ilə fərq',
     'why_title' => 'Valideynlər və uşaqlar nə qazanır?',
     'why_lead' => 'Sadəcə imtahan deyil — ailə üçün aydın nəticə, uşaq üçün motivasiya.',
     'why_parent_title' => 'Valideynlər üçün qazanc',

@@ -108,11 +108,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 ?>
 <!DOCTYPE html>
 <html lang="az">
-<head><meta charset="UTF-8"><title>eSınaq Install</title>
-<style>body{font-family:system-ui;max-width:560px;margin:40px auto;padding:0 16px;line-height:1.5}button{padding:12px 20px;background:#0f4c6e;color:#fff;border:0;border-radius:8px;font-weight:700;cursor:pointer}.ok{color:#0f4c6e}.err{color:#c0392b;background:#fdecea;padding:12px;border-radius:8px}</style>
+<head><meta charset="UTF-8"><title>eSınaq.net Install</title>
+<style>body{font-family:system-ui;max-width:560px;margin:40px auto;padding:0 16px;line-height:1.5}button{padding:12px 20px;background:#1565c0;color:#fff;border:0;border-radius:8px;font-weight:700;cursor:pointer}.ok{color:#1565c0}.err{color:#c0392b;background:#fdecea;padding:12px;border-radius:8px}</style>
 </head>
 <body>
-<h1>eSınaq quraşdırma</h1>
+<h1>eSınaq.net quraşdırma</h1>
 <p><code>.env</code> faylındakı DB məlumatları ilə cədvəlləri yaradır.</p>
 <?php if ($error): ?><p class="err"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></p><?php endif; ?>
 <?php if ($done): ?>

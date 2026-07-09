@@ -18,7 +18,7 @@ $isLangRoute = (bool) preg_match('#^/dil/(az|ru)$#', $path);
 $isInstall = str_starts_with($path, '/install');
 
 if (!\App\Core\Lang::hasLocale() && !$isLangRoute && !$isInstall) {
-    \App\Core\View::render('home/language', ['title' => 'eSınaq'], null);
+    \App\Core\View::render('home/language', ['title' => brand_name()], null);
     exit;
 }
 
