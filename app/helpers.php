@@ -100,18 +100,33 @@ function brand_html(string $variant = 'nav'): string
     return '<span class="brand-lockup">' . $e . $name . $tld . '</span>';
 }
 
+function app_base_url(): string
+{
+    $configured = rtrim((string) env('APP_URL', ''), '/');
+    if ($configured !== '' && !preg_match('#^https?://localhost#i', $configured) && !str_contains($configured, '127.0.0.1')) {
+        return $configured;
+    }
+
+    $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
+    $host = (string) ($_SERVER['HTTP_HOST'] ?? 'esinaq.net');
+    if ($host === '' || str_starts_with($host, 'localhost') || str_starts_with($host, '127.0.0.1')) {
+        $host = 'www.esinaq.net';
+    }
+    return ($https ? 'https' : 'http') . '://' . $host;
+}
+
 function redirect(string $path): never
 {
     // Only allow relative app paths — block open redirects
     $safe = \App\Core\Security::safeRedirectPath($path);
-    $url = rtrim((string) env('APP_URL', ''), '/') . $safe;
-    header('Location: ' . $url);
+    header('Location: ' . app_base_url() . $safe);
     exit;
 }
 
 function url(string $path = ''): string
 {
-    return rtrim((string) env('APP_URL', ''), '/') . '/' . ltrim($path, '/');
+    return app_base_url() . '/' . ltrim($path, '/');
 }
 
 function asset(string $path): string
