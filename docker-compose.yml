@@ -1,0 +1,56 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/var/www/html
+    environment:
+      APP_ENV: local
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: esinaq
+      DB_USER: esinaq
+      DB_PASS: esinaq_secret
+      MAIL_HOST: mailhog
+      MAIL_PORT: 1025
+      MAIL_FROM: esinaq@esinaq.net
+      MAIL_FROM_NAME: eSınaq
+      APP_URL: http://localhost:8080
+      APP_SECRET: local_dev_secret_change_in_production_32chars
+    depends_on:
+      db:
+        condition: service_healthy
+      mailhog:
+        condition: service_started
+
+  db:
+    image: mysql:8.0
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root_secret
+      MYSQL_DATABASE: esinaq
+      MYSQL_USER: esinaq
+      MYSQL_PASSWORD: esinaq_secret
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
+      - ./database/sample_questions.sql:/docker-entrypoint-initdb.d/03-sample.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot_secret"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+
+volumes:
+  db_data:

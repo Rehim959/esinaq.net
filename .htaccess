@@ -1,0 +1,11 @@
+RewriteEngine On
+
+# If already in public, skip
+RewriteRule ^public/ - [L]
+
+# Serve existing files from root (rare)
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
+
+# Route everything through public/
+RewriteRule ^(.*)$ public/$1 [L]
