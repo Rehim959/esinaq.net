@@ -12,12 +12,25 @@
     <?php else: ?>
         <div class="child-list">
             <?php foreach ($children as $c): ?>
+                <?php
+                $examLink = url('/imtahan/' . $c['access_token']);
+                $waText = rawurlencode(__('share_exam_wa_text', [
+                    'name' => person_full_name($c),
+                    'link' => $examLink,
+                    'password' => child_password_display($c['password_hint'] ?? null, $c['first_name'] ?? null, $c['birth_date'] ?? null),
+                ]));
+                ?>
                 <article class="child-row">
                     <div>
                         <h3><?= e(person_full_name($c)) ?></h3>
                         <p class="muted"><?= e(grade_label((int)$c['grade'])) ?> · <?= e(sector_label($c['sector'])) ?></p>
-                        <p class="tiny"><?= e(__('link')) ?>: <code><?= e(url('/imtahan/' . $c['access_token'])) ?></code></p>
                         <p class="tiny"><?= e(__('password')) ?>: <code><?= e(child_password_display($c['password_hint'] ?? null, $c['first_name'] ?? null, $c['birth_date'] ?? null)) ?></code></p>
+                        <div class="exam-link-box">
+                            <a class="btn btn-sm" href="<?= e($examLink) ?>" target="_blank" rel="noopener"><?= e(__('open_exam_panel')) ?></a>
+                            <a class="btn btn-sm btn-ghost" href="https://wa.me/?text=<?= $waText ?>" target="_blank" rel="noopener"><?= e(__('share_whatsapp')) ?></a>
+                            <a class="btn btn-sm btn-ghost" href="mailto:?subject=<?= rawurlencode(__('share_exam_mail_subject', ['name' => $c['first_name']])) ?>&body=<?= $waText ?>"><?= e(__('share_email')) ?></a>
+                        </div>
+                        <p class="tiny muted exam-link-url"><code><?= e($examLink) ?></code></p>
                     </div>
                     <div class="child-meta">
                         <?php $last = $stats[$c['id']][0] ?? null; ?>

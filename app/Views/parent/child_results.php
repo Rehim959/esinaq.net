@@ -1,13 +1,14 @@
 <div class="page">
     <div class="page-actions">
         <a href="<?= url('/valideyn') ?>" class="btn btn-ghost btn-sm">← <?= e(__('back')) ?></a>
-        <a class="btn btn-sm" href="<?= e($examLink) ?>" target="_blank"><?= e(__('exam_link')) ?></a>
+        <a class="btn btn-sm" href="<?= e($examLink) ?>" target="_blank" rel="noopener"><?= e(__('open_exam_panel')) ?></a>
     </div>
 
     <div class="info-strip">
         <div><strong><?= e(person_full_name($child)) ?></strong></div>
         <div><?= e(grade_label((int)$child['grade'])) ?> · <?= e(sector_label($child['sector'])) ?></div>
         <div class="tiny"><?= e(__('password')) ?>: <code><?= e(child_password_display($child['password_hint'] ?? null, $child['first_name'] ?? null, $child['birth_date'] ?? null)) ?></code></div>
+        <div class="tiny muted exam-link-url"><code><?= e($examLink) ?></code></div>
     </div>
 
     <?php if (!empty($weakSubjects)): ?>

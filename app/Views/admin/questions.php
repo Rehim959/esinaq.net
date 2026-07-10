@@ -3,7 +3,8 @@
         <a class="btn" href="<?= url('/admin/suallar/elave') ?>"><?= e(__('add_question_paste')) ?></a>
     </div>
 
-    <form class="filter-bar" method="get">
+    <form class="filter-bar" method="get" action="<?= e(form_get_action()) ?>">
+        <?= route_hidden('/admin/suallar') ?>
         <select name="grade">
             <option value="0"><?= e(__('all_grades')) ?></option>
             <?php foreach ($grades as $g): ?>
@@ -25,7 +26,17 @@
     </form>
 
     <table class="table">
-        <thead><tr><th><?= e(__('id')) ?></th><th><?= e(__('question')) ?></th><th><?= e(__('subject')) ?></th><th><?= e(__('grade')) ?></th><th><?= e(__('sector')) ?></th><th><?= e(__('answer_col')) ?></th><th></th></tr></thead>
+        <thead>
+        <tr>
+            <th><?= e(__('id')) ?></th>
+            <th><?= e(__('question')) ?></th>
+            <th><?= e(__('subject')) ?></th>
+            <th><?= e(__('grade')) ?></th>
+            <th><?= e(__('sector')) ?></th>
+            <th><?= e(__('answer_col')) ?></th>
+            <th></th>
+        </tr>
+        </thead>
         <tbody>
         <?php foreach ($questions as $q): ?>
             <tr>
@@ -35,10 +46,12 @@
                 <td><?= (int)$q['grade'] ?></td>
                 <td><?= e(strtoupper($q['sector'])) ?></td>
                 <td><strong><?= e($q['correct_option']) ?></strong></td>
-                <td>
-                    <form method="post" action="<?= url('/admin/suallar/sil/' . $q['id']) ?>" data-confirm="<?= e(__('confirm_delete')) ?>">
+                <td class="actions-cell">
+                    <a class="btn btn-sm btn-ghost" href="<?= url('/admin/suallar/bax/' . $q['id']) ?>"><?= e(__('view_details')) ?></a>
+                    <a class="btn btn-sm" href="<?= url('/admin/suallar/duzelis/' . $q['id']) ?>"><?= e(__('edit')) ?></a>
+                    <form method="post" action="<?= url('/admin/suallar/sil/' . $q['id']) ?>" class="inline-form" data-confirm="<?= e(__('confirm_delete')) ?>">
                         <?= csrf_field() ?>
-                        <button type="submit" class="link-btn danger"><?= e(__('delete')) ?></button>
+                        <button type="submit" class="btn btn-sm btn-danger"><?= e(__('delete')) ?></button>
                     </form>
                 </td>
             </tr>

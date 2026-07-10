@@ -481,6 +481,29 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 }
 .team-add-card { margin-bottom: 28px; }
 .team-add-title { margin-top: 0; }
+.phone-row {
+  display: grid; grid-template-columns: auto 90px 1fr; gap: 8px; align-items: center; margin-top: 6px;
+}
+.phone-prefix {
+  font-weight: 800; color: var(--brand-deep); padding: 10px 12px;
+  background: #eef6f8; border: 1.5px solid var(--line); border-radius: 10px;
+}
+.phone-row select, .phone-row input { margin-top: 0 !important; }
+.exam-link-box { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 6px; }
+.exam-link-url { word-break: break-all; }
+.search-input {
+  flex: 1; min-width: 220px; padding: 9px 12px; border-radius: 10px;
+  border: 1.5px solid var(--line); font: inherit;
+}
+.option-review-list { list-style: none; padding: 0; margin: 16px 0 0; display: flex; flex-direction: column; gap: 8px; }
+.option-review-list li {
+  display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px;
+  border: 1px solid var(--line); border-radius: 10px; background: #f7faf8;
+}
+.option-review-list li.is-correct { border-color: var(--brand-2); background: #e8f7ef; }
+.option-review-list .correct-mark { margin-left: auto; color: var(--brand-2); font-size: 12px; }
+.question-detail-card .q-title { margin-top: 0; }
+.status-scheduled { background: #fff4e5; color: #b35400; }
 
 .child-list { display: flex; flex-direction: column; gap: 12px; }
 .child-row { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }

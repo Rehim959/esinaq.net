@@ -1,4 +1,13 @@
 <div class="page">
+    <form class="filter-bar" method="get" action="<?= e(form_get_action()) ?>">
+        <?= route_hidden('/admin/valideynler') ?>
+        <input type="search" name="q" value="<?= e($search ?? '') ?>" placeholder="<?= e(__('search_parents_placeholder')) ?>" class="search-input">
+        <button class="btn btn-sm" type="submit"><?= e(__('search')) ?></button>
+        <?php if (!empty($search)): ?>
+            <a class="btn btn-sm btn-ghost" href="<?= url('/admin/valideynler') ?>"><?= e(__('clear')) ?></a>
+        <?php endif; ?>
+    </form>
+
     <table class="table">
         <thead>
         <tr>

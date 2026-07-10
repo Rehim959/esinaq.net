@@ -1,0 +1,27 @@
+eSınaq.net — FileZilla ilə yükləmə
+
+1) Bu ZIP-i aç
+2) İçində "public_html" qovluğu var
+3) FileZilla ilə hostingə bağlan
+4) Serverdə public_html qovluğunu aç
+5) ZIP-dəki public_html İÇİNDƏKİ bütün fayl və qovluqları
+   serverdəki public_html içinə yüklə (Copy)
+
+Yükləmədən sonra serverdə public_html içində bunlar olmalıdır:
+  index.php
+  install.php
+  .htaccess
+  app
+  assets
+  database
+  lang
+  routes
+  storage
+
+6) Brauzerdə aç:
+   https://www.esinaq.net/install.php
+
+7) Formanı doldur (MySQL + admin şifrə) → Quraşdırmanı tamamla
+8) Sayt açılacaq: https://www.esinaq.net/
+
+QEYD: localhost yoxdur. APP_URL avtomatik www.esinaq.net olur.

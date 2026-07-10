@@ -291,18 +291,41 @@ function child_password_display(?string $stored, ?string $firstName = null, ?str
     return $stored;
 }
 
-/** Full name: Soyad Ad Ata adı */
+/** Full name: Ad Soyad Ata adı */
 function person_full_name(array $row): string
 {
     $parts = array_filter([
-        trim((string) ($row['last_name'] ?? '')),
         trim((string) ($row['first_name'] ?? '')),
+        trim((string) ($row['last_name'] ?? '')),
         trim((string) ($row['patronymic'] ?? '')),
     ], static fn ($p) => $p !== '');
     return $parts === [] ? '—' : implode(' ', $parts);
 }
 
-/** Normalize / validate AZ mobile: returns digits string or null */
+/** AZ mobile operators for registration UI */
+function phone_operators(): array
+{
+    return ['50', '51', '55', '60', '70', '77', '99', '10'];
+}
+
+/**
+ * Build phone from +994 + operator + 7-digit local number.
+ * Also accepts a full number string via normalize_phone fallback.
+ */
+function build_az_phone(string $operator, string $local, string $fallbackFull = ''): ?string
+{
+    $op = preg_replace('/\D+/', '', $operator) ?? '';
+    $local = preg_replace('/\D+/', '', $local) ?? '';
+    if (in_array($op, phone_operators(), true) && strlen($local) === 7) {
+        return '+994' . $op . $local;
+    }
+    if ($fallbackFull !== '') {
+        return normalize_phone($fallbackFull);
+    }
+    return null;
+}
+
+/** Normalize / validate AZ mobile: returns +994... or null */
 function normalize_phone(string $phone): ?string
 {
     $raw = trim($phone);
@@ -310,7 +333,6 @@ function normalize_phone(string $phone): ?string
         return null;
     }
     $digits = preg_replace('/\D+/', '', $raw) ?? '';
-    // 994XXXXXXXXX or 0XXXXXXXXX or 9 digits local
     if (str_starts_with($digits, '994') && strlen($digits) === 12) {
         return '+' . $digits;
     }
@@ -320,11 +342,22 @@ function normalize_phone(string $phone): ?string
     if (strlen($digits) === 9) {
         return '+994' . $digits;
     }
-    // Accept other international if 10–15 digits
     if (strlen($digits) >= 10 && strlen($digits) <= 15) {
         return '+' . $digits;
     }
     return null;
+}
+
+/** Hidden `r` field so GET filter forms keep query-string routing */
+function route_hidden(string $path): string
+{
+    $path = '/' . ltrim($path, '/');
+    return '<input type="hidden" name="r" value="' . e($path) . '">';
+}
+
+function form_get_action(): string
+{
+    return app_base_url() . '/index.php';
 }
 
 function format_date(?string $datetime, string $format = 'd.m.Y H:i'): string

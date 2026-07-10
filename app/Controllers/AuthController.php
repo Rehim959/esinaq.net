@@ -39,18 +39,20 @@ final class AuthController
         $last = trim((string) ($_POST['last_name'] ?? ''));
         $patronymic = trim((string) ($_POST['patronymic'] ?? ''));
         $email = strtolower(trim((string) ($_POST['email'] ?? '')));
+        $phoneOp = trim((string) ($_POST['phone_op'] ?? ''));
+        $phoneNum = trim((string) ($_POST['phone_num'] ?? ''));
         $phoneRaw = trim((string) ($_POST['phone'] ?? ''));
         $password = (string) ($_POST['password'] ?? '');
         $password2 = (string) ($_POST['password_confirmation'] ?? '');
 
         flash_old($_POST);
 
-        if ($first === '' || $last === '' || $patronymic === '' || $email === '' || $phoneRaw === '' || $password === '') {
+        if ($first === '' || $last === '' || $patronymic === '' || $email === '' || $password === '') {
             Session::flash('error', __('err_required'));
             redirect('/qeydiyyat');
         }
 
-        $phone = normalize_phone($phoneRaw);
+        $phone = build_az_phone($phoneOp, $phoneNum, $phoneRaw);
         if ($phone === null) {
             Session::flash('error', __('err_phone'));
             redirect('/qeydiyyat');

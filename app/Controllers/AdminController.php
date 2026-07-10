@@ -207,6 +207,91 @@ final class AdminController
         redirect('/admin/suallar');
     }
 
+    public function showQuestion(string $id): void
+    {
+        Auth::requireAdmin();
+        $pdo = Database::connection();
+        $stmt = $pdo->prepare(
+            'SELECT q.*, s.name_az AS subject_name, s.name_ru AS subject_name_ru
+             FROM questions q JOIN subjects s ON s.id = q.subject_id WHERE q.id = ?'
+        );
+        $stmt->execute([(int) $id]);
+        $q = $stmt->fetch();
+        if (!$q) {
+            Session::flash('error', __('err_question_not_found'));
+            redirect('/admin/suallar');
+        }
+
+        View::render('admin/question_show', [
+            'title' => __('question_detail') . ' #' . (int) $q['id'],
+            'q' => $q,
+        ], 'layouts/admin');
+    }
+
+    public function showEditQuestion(string $id): void
+    {
+        Auth::requireAdmin();
+        $pdo = Database::connection();
+        $stmt = $pdo->prepare('SELECT * FROM questions WHERE id = ?');
+        $stmt->execute([(int) $id]);
+        $q = $stmt->fetch();
+        if (!$q) {
+            Session::flash('error', __('err_question_not_found'));
+            redirect('/admin/suallar');
+        }
+        $subjects = $pdo->query('SELECT * FROM subjects WHERE is_active = 1 ORDER BY sort_order')->fetchAll();
+
+        View::render('admin/question_edit', [
+            'title' => __('edit_question') . ' #' . (int) $q['id'],
+            'q' => $q,
+            'subjects' => $subjects,
+            'grades' => grades_list(),
+        ], 'layouts/admin');
+    }
+
+    public function updateQuestion(string $id): void
+    {
+        Auth::requireAdmin();
+        if (!Session::verifyCsrf($_POST['_csrf'] ?? null)) {
+            Session::flash('error', __('err_csrf_short'));
+            redirect('/admin/suallar');
+        }
+
+        $qid = (int) $id;
+        $subjectId = (int) ($_POST['subject_id'] ?? 0);
+        $grade = (int) ($_POST['grade'] ?? 0);
+        $sector = (string) ($_POST['sector'] ?? '');
+        $text = trim((string) ($_POST['question_text'] ?? ''));
+        $a = trim((string) ($_POST['option_a'] ?? ''));
+        $b = trim((string) ($_POST['option_b'] ?? ''));
+        $c = trim((string) ($_POST['option_c'] ?? ''));
+        $d = trim((string) ($_POST['option_d'] ?? ''));
+        $eOpt = trim((string) ($_POST['option_e'] ?? ''));
+        $correct = strtoupper(trim((string) ($_POST['correct_option'] ?? '')));
+
+        if (
+            $subjectId < 1 || $grade < 1 || $grade > 11 || !in_array($sector, ['az', 'ru'], true)
+            || $text === '' || $a === '' || $b === '' || $c === '' || $d === ''
+            || !in_array($correct, ['A', 'B', 'C', 'D', 'E'], true)
+            || ($correct === 'E' && $eOpt === '')
+        ) {
+            Session::flash('error', __('err_question_fields'));
+            redirect('/admin/suallar/duzelis/' . $qid);
+        }
+
+        Database::connection()->prepare(
+            'UPDATE questions SET subject_id=?, grade=?, sector=?, question_text=?, option_a=?, option_b=?, option_c=?, option_d=?, option_e=?, correct_option=?, updated_at=NOW()
+             WHERE id=?'
+        )->execute([
+            $subjectId, $grade, $sector, $text, $a, $b, $c, $d,
+            $eOpt !== '' ? $eOpt : null,
+            $correct, $qid,
+        ]);
+
+        Session::flash('success', __('ok_question_updated'));
+        redirect('/admin/suallar/bax/' . $qid);
+    }
+
     public function exams(): void
     {
         Auth::requireAdmin();
@@ -263,11 +348,12 @@ final class AdminController
             redirect('/admin/imtahanlar/yeni');
         }
 
+        $status = (strtotime($startsAtSql) <= time()) ? 'running' : 'scheduled';
         $pdo = Database::connection();
         $pdo->prepare(
             'INSERT INTO exams (title, grade, sector, duration_minutes, starts_at, ends_at, status, created_by)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-        )->execute([$title, $grade, $sector, $duration, $startsAtSql, $endsAtSql, 'draft', Auth::adminId()]);
+        )->execute([$title, $grade, $sector, $duration, $startsAtSql, $endsAtSql, $status, Auth::adminId()]);
 
         $examId = (int) $pdo->lastInsertId();
         $ins = $pdo->prepare('INSERT INTO exam_subjects (exam_id, subject_id, question_count) VALUES (?, ?, ?)');
@@ -279,6 +365,10 @@ final class AdminController
         }
 
         $picked = (new ExamService())->pickQuestions($examId);
+        if ($status === 'running' && $picked === 0) {
+            Session::flash('error', __('err_exam_create'));
+            redirect('/admin/imtahanlar');
+        }
         Session::flash('success', __('ok_exam_created', ['n' => (string) $picked]));
         redirect('/admin/imtahanlar');
     }
@@ -359,9 +449,79 @@ final class AdminController
         redirect('/admin/imtahanlar');
     }
 
-    public function cloneExam(string $id): void
+    public function showEditExam(string $id): void
     {
         Auth::requireAdmin();
+        $pdo = Database::connection();
+        $stmt = $pdo->prepare('SELECT * FROM exams WHERE id = ?');
+        $stmt->execute([(int) $id]);
+        $exam = $stmt->fetch();
+        if (!$exam) {
+            Session::flash('error', __('err_exam_not_found'));
+            redirect('/admin/imtahanlar');
+        }
+
+        View::render('admin/exam_edit', [
+            'title' => __('edit_exam_schedule'),
+            'exam' => $exam,
+        ], 'layouts/admin');
+    }
+
+    public function updateExamSchedule(string $id): void
+    {
+        Auth::requireAdmin();
+        if (!Session::verifyCsrf($_POST['_csrf'] ?? null)) {
+            Session::flash('error', __('err_csrf_short'));
+            redirect('/admin/imtahanlar');
+        }
+
+        $examId = (int) $id;
+        $startsAt = trim((string) ($_POST['starts_at'] ?? ''));
+        $endsAt = trim((string) ($_POST['ends_at'] ?? ''));
+        $title = trim((string) ($_POST['title'] ?? ''));
+        $duration = max(5, min(300, (int) ($_POST['duration_minutes'] ?? 60)));
+
+        $startsAtSql = $startsAt !== '' ? date('Y-m-d H:i:s', strtotime(str_replace('T', ' ', $startsAt))) : null;
+        $endsAtSql = $endsAt !== '' ? date('Y-m-d H:i:s', strtotime(str_replace('T', ' ', $endsAt))) : null;
+
+        if ($title === '' || !$startsAtSql || !$endsAtSql || strtotime($endsAtSql) <= strtotime($startsAtSql)) {
+            Session::flash('error', __('err_exam_create'));
+            redirect('/admin/imtahanlar/duzelis/' . $examId);
+        }
+
+        $pdo = Database::connection();
+        $stmt = $pdo->prepare('SELECT status FROM exams WHERE id = ?');
+        $stmt->execute([$examId]);
+        $row = $stmt->fetch();
+        if (!$row) {
+            Session::flash('error', __('err_exam_not_found'));
+            redirect('/admin/imtahanlar');
+        }
+
+        // Recalculate status from new window (unless already finished — keep finished unless window reopened)
+        $status = $row['status'];
+        if ($status !== 'finished' && $status !== 'cancelled') {
+            if (strtotime($endsAtSql) <= time()) {
+                $status = 'finished';
+            } elseif (strtotime($startsAtSql) <= time()) {
+                $status = 'running';
+            } else {
+                $status = 'scheduled';
+            }
+        }
+
+        $pdo->prepare(
+            'UPDATE exams SET title = ?, duration_minutes = ?, starts_at = ?, ends_at = ?, status = ? WHERE id = ?'
+        )->execute([$title, $duration, $startsAtSql, $endsAtSql, $status, $examId]);
+
+        \App\Services\ExamScheduler::sync();
+        Session::flash('success', __('ok_exam_schedule_updated'));
+        redirect('/admin/imtahanlar');
+    }
+
+    public function cloneExam(string $id): void
+    {
+        Auth::requireSuperAdmin();
         if (!Session::verifyCsrf($_POST['_csrf'] ?? null)) {
             Session::flash('error', __('err_csrf_short'));
             redirect('/admin/imtahanlar');
@@ -543,14 +703,32 @@ final class AdminController
     public function parents(): void
     {
         Auth::requireAdmin();
-        $rows = Database::connection()->query(
-            'SELECT p.*, (SELECT COUNT(*) FROM children c WHERE c.parent_id = p.id) AS child_count
-             FROM parents p ORDER BY p.id DESC LIMIT 200'
-        )->fetchAll();
+        $q = trim((string) ($_GET['q'] ?? ''));
+        $pdo = Database::connection();
+
+        if ($q !== '') {
+            $like = '%' . $q . '%';
+            $stmt = $pdo->prepare(
+                'SELECT p.*, (SELECT COUNT(*) FROM children c WHERE c.parent_id = p.id) AS child_count
+                 FROM parents p
+                 WHERE p.first_name LIKE ? OR p.last_name LIKE ? OR p.patronymic LIKE ?
+                    OR p.email LIKE ? OR p.phone LIKE ?
+                    OR CONCAT(p.first_name, " ", p.last_name, " ", p.patronymic) LIKE ?
+                 ORDER BY p.id DESC LIMIT 200'
+            );
+            $stmt->execute([$like, $like, $like, $like, $like, $like]);
+            $rows = $stmt->fetchAll();
+        } else {
+            $rows = $pdo->query(
+                'SELECT p.*, (SELECT COUNT(*) FROM children c WHERE c.parent_id = p.id) AS child_count
+                 FROM parents p ORDER BY p.id DESC LIMIT 200'
+            )->fetchAll();
+        }
 
         View::render('admin/parents', [
             'title' => __('parents'),
             'parents' => $rows,
+            'search' => $q,
         ], 'layouts/admin');
     }
 
@@ -639,17 +817,32 @@ final class AdminController
     public function children(): void
     {
         Auth::requireAdmin();
-        $rows = Database::connection()->query(
-            'SELECT c.*, p.first_name AS parent_first, p.last_name AS parent_last, p.patronymic AS parent_patronymic,
+        $q = trim((string) ($_GET['q'] ?? ''));
+        $pdo = Database::connection();
+
+        $base = 'SELECT c.*, p.first_name AS parent_first, p.last_name AS parent_last, p.patronymic AS parent_patronymic,
                     p.email AS parent_email, p.phone AS parent_phone
              FROM children c
-             JOIN parents p ON p.id = c.parent_id
-             ORDER BY c.id DESC LIMIT 300'
-        )->fetchAll();
+             JOIN parents p ON p.id = c.parent_id';
+
+        if ($q !== '') {
+            $like = '%' . $q . '%';
+            $stmt = $pdo->prepare(
+                $base . ' WHERE c.first_name LIKE ? OR c.last_name LIKE ? OR c.patronymic LIKE ?
+                    OR p.first_name LIKE ? OR p.last_name LIKE ? OR p.email LIKE ? OR p.phone LIKE ?
+                    OR CONCAT(c.first_name, " ", c.last_name, " ", c.patronymic) LIKE ?
+                 ORDER BY c.id DESC LIMIT 300'
+            );
+            $stmt->execute([$like, $like, $like, $like, $like, $like, $like, $like]);
+            $rows = $stmt->fetchAll();
+        } else {
+            $rows = $pdo->query($base . ' ORDER BY c.id DESC LIMIT 300')->fetchAll();
+        }
 
         View::render('admin/children', [
             'title' => __('children_list'),
             'children' => $rows,
+            'search' => $q,
         ], 'layouts/admin');
     }
 

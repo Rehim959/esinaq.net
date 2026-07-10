@@ -33,6 +33,11 @@ date_default_timezone_set('Asia/Baku');
 \App\Core\Session::start();
 \App\Core\Lang::boot();
 
+try {
+    \App\Services\ExamScheduler::sync();
+} catch (Throwable) {
+}
+
 // Ensure admin exists on first boot (create only — never auto-reset; never use placeholders)
 try {
     $pdo = \App\Core\Database::connection();
