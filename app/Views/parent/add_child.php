@@ -1,73 +1,93 @@
-<div class="page narrow-form">
-    <form method="post" action="<?= url('/valideyn/usaq-elave') ?>" class="form-card">
+<?php
+$oldBirth = trim((string) old('birth_date'));
+if ($oldBirth === '' && old('birth_year') && old('birth_month') && old('birth_day')) {
+    $oldBirth = sprintf(
+        '%04d-%02d-%02d',
+        (int) old('birth_year'),
+        (int) old('birth_month'),
+        (int) old('birth_day')
+    );
+}
+$minBirth = sprintf('%04d-01-01', (int) date('Y') - 20);
+$maxBirth = sprintf('%04d-12-31', (int) date('Y') - 5);
+$oldGender = (string) (old('gender') ?: 'boy');
+$oldSector = (string) (old('sector') ?: 'az');
+$oldGrade = (string) (old('grade') ?: '');
+?>
+<div class="page narrow-form child-add-page">
+    <form method="post" action="<?= url('/valideyn/usaq-elave') ?>" class="form-card child-add-form" id="childAddForm">
         <?= csrf_field() ?>
-        <div class="grid-3">
-            <label><?= e(__('first_name')) ?><input type="text" name="first_name" value="<?= old('first_name') ?>" required></label>
-            <label><?= e(__('last_name')) ?><input type="text" name="last_name" value="<?= old('last_name') ?>" required></label>
-            <label><?= e(__('patronymic')) ?><input type="text" name="patronymic" value="<?= old('patronymic') ?>" required></label>
-        </div>
 
-        <fieldset class="birth-fieldset">
-            <legend><?= e(__('birth_date')) ?></legend>
-            <div class="grid-3">
-                <label><?= e(__('day')) ?>
-                    <select name="birth_day" required>
-                        <option value=""><?= e(__('day')) ?></option>
-                        <?php for ($d = 1; $d <= 31; $d++): ?>
-                            <option value="<?= $d ?>" <?= old('birth_day') == (string)$d ? 'selected' : '' ?>><?= $d ?></option>
-                        <?php endfor; ?>
-                    </select>
+        <section class="child-add-section">
+            <h2 class="child-add-section-title"><?= e(__('child_add_section_name')) ?></h2>
+            <label class="child-add-field"><?= e(__('first_name')) ?>
+                <input type="text" name="first_name" value="<?= e(old('first_name')) ?>" required autocomplete="given-name" enterkeyhint="next">
+            </label>
+            <label class="child-add-field"><?= e(__('last_name')) ?>
+                <input type="text" name="last_name" value="<?= e(old('last_name')) ?>" required autocomplete="family-name" enterkeyhint="next">
+            </label>
+            <label class="child-add-field"><?= e(__('patronymic')) ?>
+                <input type="text" name="patronymic" value="<?= e(old('patronymic')) ?>" required enterkeyhint="next">
+            </label>
+        </section>
+
+        <section class="child-add-section">
+            <h2 class="child-add-section-title"><?= e(__('birth_date')) ?></h2>
+            <p class="child-add-hint"><?= e(__('child_add_birth_hint')) ?></p>
+            <label class="child-add-field child-add-date">
+                <span class="sr-only"><?= e(__('birth_date')) ?></span>
+                <input type="date" name="birth_date" value="<?= e($oldBirth) ?>"
+                       min="<?= e($minBirth) ?>" max="<?= e($maxBirth) ?>"
+                       required>
+            </label>
+        </section>
+
+        <section class="child-add-section">
+            <h2 class="child-add-section-title"><?= e(__('current_grade')) ?></h2>
+            <p class="child-add-hint"><?= e(__('child_add_grade_hint')) ?></p>
+            <div class="choice-chips grade-chips" role="group" aria-label="<?= e(__('current_grade')) ?>">
+                <?php foreach ($grades as $g): ?>
+                    <label class="choice-chip">
+                        <input type="radio" name="grade" value="<?= $g ?>" required
+                            <?= $oldGrade === (string) $g ? 'checked' : '' ?>>
+                        <span><?= (int) $g ?></span>
+                    </label>
+                <?php endforeach; ?>
+            </div>
+        </section>
+
+        <section class="child-add-section">
+            <h2 class="child-add-section-title"><?= e(__('sector')) ?></h2>
+            <div class="choice-chips choice-chips-2" role="group" aria-label="<?= e(__('sector')) ?>">
+                <label class="choice-chip choice-chip-wide">
+                    <input type="radio" name="sector" value="az" required <?= $oldSector === 'az' ? 'checked' : '' ?>>
+                    <span><?= e(__('sector_az')) ?></span>
                 </label>
-                <label><?= e(__('month')) ?>
-                    <select name="birth_month" required>
-                        <option value=""><?= e(__('month')) ?></option>
-                        <?php
-                        $months = locale() === 'ru'
-                            ? [1=>'Январь',2=>'Февраль',3=>'Март',4=>'Апрель',5=>'Май',6=>'Июнь',7=>'Июль',8=>'Август',9=>'Сентябрь',10=>'Октябрь',11=>'Ноябрь',12=>'Декабрь']
-                            : [1=>'Yanvar',2=>'Fevral',3=>'Mart',4=>'Aprel',5=>'May',6=>'İyun',7=>'İyul',8=>'Avqust',9=>'Sentyabr',10=>'Oktyabr',11=>'Noyabr',12=>'Dekabr'];
-                        foreach ($months as $num => $label):
-                        ?>
-                            <option value="<?= $num ?>" <?= old('birth_month') == (string)$num ? 'selected' : '' ?>><?= e($label) ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </label>
-                <label><?= e(__('year')) ?>
-                    <select name="birth_year" required>
-                        <option value=""><?= e(__('year')) ?></option>
-                        <?php for ($y = (int)date('Y') - 5; $y >= (int)date('Y') - 20; $y--): ?>
-                            <option value="<?= $y ?>" <?= old('birth_year') == (string)$y ? 'selected' : '' ?>><?= $y ?></option>
-                        <?php endfor; ?>
-                    </select>
+                <label class="choice-chip choice-chip-wide">
+                    <input type="radio" name="sector" value="ru" required <?= $oldSector === 'ru' ? 'checked' : '' ?>>
+                    <span><?= e(__('sector_ru')) ?></span>
                 </label>
             </div>
-        </fieldset>
+        </section>
 
-        <div class="grade-sector-alert" role="alert">
-            <strong><?= e(__('grade_sector_alert_title')) ?></strong>
-            <p><?= e(__('grade_sector_alert_text')) ?></p>
+        <section class="child-add-section">
+            <h2 class="child-add-section-title"><?= e(__('gender')) ?></h2>
+            <div class="choice-chips choice-chips-2" role="group" aria-label="<?= e(__('gender')) ?>">
+                <label class="choice-chip choice-chip-wide">
+                    <input type="radio" name="gender" value="boy" required <?= $oldGender === 'boy' ? 'checked' : '' ?>>
+                    <span><?= e(__('boy')) ?></span>
+                </label>
+                <label class="choice-chip choice-chip-wide">
+                    <input type="radio" name="gender" value="girl" required <?= $oldGender === 'girl' ? 'checked' : '' ?>>
+                    <span><?= e(__('girl')) ?></span>
+                </label>
+            </div>
+        </section>
+
+        <p class="hint child-add-password-hint"><?= e(__('password_hint_help')) ?></p>
+
+        <div class="child-add-submit">
+            <button class="btn btn-block" type="submit"><?= e(__('add_and_email')) ?></button>
         </div>
-        <div class="grid-2">
-            <label><?= e(__('current_grade')) ?>
-                <select name="grade" required>
-                    <?php foreach ($grades as $g): ?>
-                        <option value="<?= $g ?>" <?= old('grade') == (string)$g ? 'selected' : '' ?>><?= e(grade_label($g)) ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </label>
-            <label><?= e(__('sector')) ?>
-                <select name="sector" required>
-                    <option value="az" <?= old('sector') === 'az' ? 'selected' : '' ?>><?= e(__('sector_az')) ?></option>
-                    <option value="ru" <?= old('sector') === 'ru' ? 'selected' : '' ?>><?= e(__('sector_ru')) ?></option>
-                </select>
-            </label>
-        </div>
-        <label><?= e(__('gender')) ?>
-            <select name="gender" required>
-                <option value="boy" <?= old('gender') === 'boy' ? 'selected' : '' ?>><?= e(__('boy')) ?></option>
-                <option value="girl" <?= old('gender') === 'girl' ? 'selected' : '' ?>><?= e(__('girl')) ?></option>
-            </select>
-        </label>
-        <p class="hint"><?= e(__('password_hint_help')) ?></p>
-        <button class="btn" type="submit"><?= e(__('add_and_email')) ?></button>
     </form>
 </div>

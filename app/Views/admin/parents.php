@@ -31,7 +31,7 @@
                 <td><?= e(format_date($p['created_at'], 'd.m.Y')) ?></td>
                 <td class="actions-cell">
                     <a class="btn btn-sm btn-ghost" href="<?= url('/admin/valideyn/' . $p['id']) ?>"><?= e(__('view_details')) ?></a>
-                    <?php if (\App\Core\Auth::isSuperAdmin()): ?>
+                    <?php if (\App\Core\Auth::canManageAccounts()): ?>
                     <form method="post" action="<?= url('/admin/valideyn/sil/' . $p['id']) ?>" class="inline-form" data-confirm="<?= e(__('confirm_delete_parent')) ?>">
                         <?= csrf_field() ?>
                         <button type="submit" class="btn btn-sm btn-danger"><?= e(__('delete')) ?></button>

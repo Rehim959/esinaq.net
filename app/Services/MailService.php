@@ -35,6 +35,10 @@ final class MailService
             $ok = false;
         }
 
+        if (!$ok && $error === null) {
+            $error = 'Mail transport returned false';
+        }
+
         $this->log($to, $subject, $htmlBody, $ok, $error);
         return $ok;
     }
@@ -102,9 +106,13 @@ final class MailService
         $message .= "Content-Type: text/html; charset=UTF-8\r\n";
         $message .= "Content-Transfer-Encoding: base64\r\n\r\n";
         $message .= chunk_split(base64_encode($htmlBody));
-        $message .= "\r\n.";
+        $message .= ".\r\n";
 
-        $this->cmd($socket, $message);
+        // Write DATA payload directly (do not use cmd() — it would corrupt multiline body)
+        if (fwrite($socket, $message) === false) {
+            fclose($socket);
+            throw new \RuntimeException('SMTP write failed during DATA');
+        }
         $this->expect($socket, 250);
         $this->cmd($socket, 'QUIT');
         fclose($socket);
@@ -194,7 +202,15 @@ final class MailService
             </p>
             <p style="font-size:13px;color:#666">Link: ' . e($examLink) . '</p>'
         );
-        return $this->send($email, e($full) . ' — giriş məlumatları | eSınaq.net', $html);
+
+        $subject = \App\Core\Security::sanitizeHeaderValue($full . ' — giriş məlumatları | eSınaq.net');
+        // One quick retry — hosting SMTP sometimes drops a single attempt
+        $ok = $this->send($email, $subject, $html);
+        if (!$ok) {
+            usleep(400000);
+            $ok = $this->send($email, $subject, $html);
+        }
+        return $ok;
     }
 
     public function passwordReset(string $email, string $token): bool
@@ -221,6 +237,139 @@ final class MailService
             </p>'
         );
         return $this->send($email, \App\Core\Security::sanitizeHeaderValue('İmtahan xatırlatması: ' . $childName . ' | eSınaq.net'), $html);
+    }
+
+    /**
+     * @param array<string,mixed> $exam
+     * @param list<string> $childNames
+     */
+    public function examInvite(
+        string $email,
+        string $parentName,
+        array $exam,
+        array $childNames,
+        string $confirmUrl
+    ): bool {
+        $starts = format_date($exam['starts_at'] ?? null);
+        $childrenList = $childNames === []
+            ? '<li>—</li>'
+            : implode('', array_map(static fn (string $n): string => '<li>' . e($n) . '</li>', $childNames));
+
+        $html = $this->wrap(
+            'İmtahan dəvəti',
+            '<p>Hörmətli ' . e($parentName) . ',</p>
+            <p>Övladlarınız üçün yeni imtahan elan olunub. Qatılmaq istəyirsinizsə, aşağıdakı düymə ilə <strong>təsdiq edin</strong>.</p>
+            <div style="background:#f4f7f5;border-radius:10px;padding:16px 20px;margin:20px 0">
+                <p style="margin:4px 0"><strong>Başlıq:</strong> ' . e((string) ($exam['title'] ?? '')) . '</p>
+                <p style="margin:4px 0"><strong>Tarix:</strong> ' . e($starts) . '</p>
+                <p style="margin:4px 0"><strong>Sinif:</strong> ' . e(grade_label((int) ($exam['grade'] ?? 0))) . '</p>
+                <p style="margin:4px 0"><strong>Sektor:</strong> ' . e(sector_label((string) ($exam['sector'] ?? ''))) . '</p>
+                <p style="margin:12px 0 4px"><strong>Uyğun uşaqlar:</strong></p>
+                <ul style="margin:0;padding-left:18px">' . $childrenList . '</ul>
+            </div>
+            <p style="text-align:center;margin:28px 0">
+                <a href="' . e($confirmUrl) . '" style="background:#0B6E4F;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">Qatılmaq istəyirəm — təsdiq et</a>
+            </p>
+            <p style="font-size:13px;color:#666">Təsdiqdən sonra admin/moderator buraxılışı yoxlayacaq. Link: ' . e($confirmUrl) . '</p>'
+        );
+
+        return $this->send(
+            $email,
+            \App\Core\Security::sanitizeHeaderValue('İmtahan dəvəti: ' . (string) ($exam['title'] ?? '') . ' | eSınaq.net'),
+            $html
+        );
+    }
+
+    /**
+     * @param array<string,mixed> $exam
+     * @param list<string> $childNames
+     */
+    public function examInterestNotify(
+        string $adminEmail,
+        string $adminName,
+        string $parentName,
+        array $exam,
+        array $childNames,
+        string $reviewUrl
+    ): bool {
+        $childrenList = $childNames === []
+            ? '<li>—</li>'
+            : implode('', array_map(static fn (string $n): string => '<li>' . e($n) . '</li>', $childNames));
+
+        $html = $this->wrap(
+            'Valideyn imtahana qatılmaq istəyir',
+            '<p>Hörmətli ' . e($adminName) . ',</p>
+            <p><strong>' . e($parentName) . '</strong> aşağıdakı imtahana qatılmaq üçün maraq göstərib.</p>
+            <div style="background:#f4f7f5;border-radius:10px;padding:16px 20px;margin:20px 0">
+                <p style="margin:4px 0"><strong>İmtahan:</strong> ' . e((string) ($exam['title'] ?? '')) . '</p>
+                <p style="margin:4px 0"><strong>Sinif / sektor:</strong> '
+                . e(grade_label((int) ($exam['grade'] ?? 0))) . ' / '
+                . e(sector_label((string) ($exam['sector'] ?? ''))) . '</p>
+                <p style="margin:12px 0 4px"><strong>Uşaqlar:</strong></p>
+                <ul style="margin:0;padding-left:18px">' . $childrenList . '</ul>
+            </div>
+            <p>İmtahana buraxılsınmı? Admin paneldə <strong>Bəli</strong> və ya <strong>Xeyr</strong> seçin.</p>
+            <p style="text-align:center;margin:28px 0">
+                <a href="' . e($reviewUrl) . '" style="background:#1e3a5f;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">Dəvətlərə bax</a>
+            </p>'
+        );
+
+        return $this->send(
+            $adminEmail,
+            \App\Core\Security::sanitizeHeaderValue('Maraq: ' . $parentName . ' — ' . (string) ($exam['title'] ?? '') . ' | eSınaq.net'),
+            $html
+        );
+    }
+
+    /**
+     * Moderator asks admin/super-admin to delete a question.
+     *
+     * @param array<string,mixed> $question
+     */
+    public function questionDeleteRequest(
+        string $adminEmail,
+        string $adminName,
+        string $moderatorName,
+        string $moderatorEmail,
+        array $question,
+        string $reviewUrl
+    ): bool {
+        $preview = mb_strimwidth(
+            trim(preg_replace('/\s+/', ' ', strip_tags((string) ($question['question_text'] ?? ''))) ?: ''),
+            0,
+            160,
+            '…'
+        );
+        $subj = locale() === 'ru'
+            ? (string) ($question['subject_name_ru'] ?? $question['subject_name'] ?? '')
+            : (string) ($question['subject_name'] ?? '');
+
+        $html = $this->wrap(
+            'Sual silinməsi sorğusu',
+            '<p>Hörmətli ' . e($adminName) . ',</p>
+            <p>Moderator <strong>' . e($moderatorName) . '</strong>
+            (' . e($moderatorEmail) . ') aşağıdakı sualın silinməsini istəyir.</p>
+            <div style="background:#f4f7f5;border-radius:10px;padding:16px 20px;margin:20px 0">
+                <p style="margin:4px 0"><strong>ID:</strong> #' . (int) ($question['id'] ?? 0) . '</p>
+                <p style="margin:4px 0"><strong>Fənn:</strong> ' . e($subj) . '</p>
+                <p style="margin:4px 0"><strong>Sinif / sektor:</strong> '
+                . e(grade_label((int) ($question['grade'] ?? 0))) . ' / '
+                . e(sector_label((string) ($question['sector'] ?? ''))) . '</p>
+                <p style="margin:12px 0 4px"><strong>Sual:</strong></p>
+                <p style="margin:0">' . e($preview !== '' ? $preview : '—') . '</p>
+            </div>
+            <p style="text-align:center;margin:28px 0">
+                <a href="' . e($reviewUrl) . '" style="background:#1e3a5f;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">Suala bax / sil</a>
+            </p>'
+        );
+
+        return $this->send(
+            $adminEmail,
+            \App\Core\Security::sanitizeHeaderValue(
+                'Sual silinməsi sorğusu #' . (int) ($question['id'] ?? 0) . ' | eSınaq.net'
+            ),
+            $html
+        );
     }
 
     private function wrap(string $title, string $body): string

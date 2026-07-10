@@ -62,16 +62,27 @@ final class ParentController
         $first = trim((string) ($_POST['first_name'] ?? ''));
         $last = trim((string) ($_POST['last_name'] ?? ''));
         $patronymic = trim((string) ($_POST['patronymic'] ?? ''));
-        $day = (int) ($_POST['birth_day'] ?? 0);
-        $month = (int) ($_POST['birth_month'] ?? 0);
-        $year = (int) ($_POST['birth_year'] ?? 0);
         $grade = (int) ($_POST['grade'] ?? 0);
         $sector = (string) ($_POST['sector'] ?? '');
         $gender = (string) ($_POST['gender'] ?? '');
 
         $birth = '';
-        if ($day > 0 && $month > 0 && $year > 0 && checkdate($month, $day, $year)) {
-            $birth = sprintf('%04d-%02d-%02d', $year, $month, $day);
+        $birthRaw = trim((string) ($_POST['birth_date'] ?? ''));
+        if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $birthRaw, $m)) {
+            $y = (int) $m[1];
+            $mo = (int) $m[2];
+            $d = (int) $m[3];
+            if (checkdate($mo, $d, $y)) {
+                $birth = sprintf('%04d-%02d-%02d', $y, $mo, $d);
+            }
+        }
+        if ($birth === '') {
+            $day = (int) ($_POST['birth_day'] ?? 0);
+            $month = (int) ($_POST['birth_month'] ?? 0);
+            $year = (int) ($_POST['birth_year'] ?? 0);
+            if ($day > 0 && $month > 0 && $year > 0 && checkdate($month, $day, $year)) {
+                $birth = sprintf('%04d-%02d-%02d', $year, $month, $day);
+            }
         }
 
         if ($first === '' || $last === '' || $patronymic === '' || $birth === '' || $grade < 1 || $grade > 11 || !in_array($sector, ['az', 'ru'], true) || !in_array($gender, ['boy', 'girl'], true)) {
@@ -104,10 +115,73 @@ final class ParentController
         ];
 
         $link = url('/imtahan/' . $token);
-        (new MailService())->childRegistered($p['email'], $p['first_name'], $child, $link);
+        $mailed = false;
+        if (is_array($p) && !empty($p['email'])) {
+            $mailed = (new MailService())->childRegistered(
+                (string) $p['email'],
+                person_full_name($p),
+                $child,
+                $link
+            );
+        }
 
         clear_old();
-        Session::flash('success', __('ok_child_added', ['name' => $first]));
+        if ($mailed) {
+            Session::flash('success', __('ok_child_added', ['name' => $first]));
+        } else {
+            Session::flash('success', __('ok_child_added_no_mail', ['name' => $first]));
+            Session::flash('error', __('err_child_mail_failed'));
+        }
+        redirect('/valideyn');
+    }
+
+    public function resendChildMail(string $id): void
+    {
+        Auth::requireParent();
+        if (!Session::verifyCsrf($_POST['_csrf'] ?? null)) {
+            Session::flash('error', __('err_csrf_short'));
+            redirect('/valideyn');
+        }
+
+        $childId = (int) $id;
+        $pdo = Database::connection();
+        $childStmt = $pdo->prepare('SELECT * FROM children WHERE id = ? AND parent_id = ?');
+        $childStmt->execute([$childId, Auth::parentId()]);
+        $kid = $childStmt->fetch();
+        if (!$kid) {
+            Session::flash('error', __('err_child_not_found'));
+            redirect('/valideyn');
+        }
+
+        $parent = $pdo->prepare('SELECT * FROM parents WHERE id = ?');
+        $parent->execute([Auth::parentId()]);
+        $p = $parent->fetch();
+        if (!$p || empty($p['email'])) {
+            Session::flash('error', __('err_child_mail_failed'));
+            redirect('/valideyn');
+        }
+
+        $plainPassword = child_password((string) $kid['first_name'], (string) $kid['birth_date']);
+        $payload = [
+            'first_name' => $kid['first_name'],
+            'last_name' => $kid['last_name'],
+            'patronymic' => $kid['patronymic'] ?? '',
+            'grade' => $kid['grade'],
+            'sector' => $kid['sector'],
+            'password_hint' => $plainPassword,
+        ];
+        $link = url('/imtahan/' . $kid['access_token']);
+        $ok = (new MailService())->childRegistered(
+            (string) $p['email'],
+            person_full_name($p),
+            $payload,
+            $link
+        );
+
+        Session::flash(
+            $ok ? 'success' : 'error',
+            $ok ? __('ok_child_mail_resent', ['name' => (string) $kid['first_name']]) : __('err_child_mail_failed')
+        );
         redirect('/valideyn');
     }
 

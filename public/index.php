@@ -15,10 +15,16 @@ $path = request_path();
 
 $isLangRoute = (bool) preg_match('#^/dil/(az|ru)$#', $path);
 $isInstall = str_starts_with($path, '/install');
+$isInviteConfirm = str_starts_with($path, '/imtahan-dewet');
 
-if (!\App\Core\Lang::hasLocale() && !$isLangRoute && !$isInstall) {
+if (!\App\Core\Lang::hasLocale() && !$isLangRoute && !$isInstall && !$isInviteConfirm) {
     \App\Core\View::render('home/language', ['title' => brand_name()], null);
     exit;
+}
+
+// Email invite links may open without a prior locale cookie
+if ($isInviteConfirm && !\App\Core\Lang::hasLocale()) {
+    \App\Core\Lang::setLocale('az');
 }
 
 $router = require BASE_PATH . '/routes/web.php';

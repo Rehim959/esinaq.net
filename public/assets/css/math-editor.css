@@ -1,0 +1,93 @@
+/* Math / geometry question editor */
+.math-editor { display: flex; flex-direction: column; gap: 18px; margin-top: 12px; }
+.math-editor-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 960px) {
+  .math-editor-grid { grid-template-columns: 1fr; }
+}
+.math-toolbar {
+  display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 10px;
+}
+.math-tool, .geo-tool, .geo-clear, .geo-undo, .geo-insert, .geo-font-up, .geo-font-down, .geo-delete {
+  font: inherit; font-size: 13px; font-weight: 700;
+  padding: 7px 10px; border-radius: 8px; cursor: pointer;
+  border: 1.5px solid var(--line); background: #fff; color: var(--ink);
+  transition: background .15s, border-color .15s, transform .15s;
+}
+.math-tool:hover, .geo-tool:hover, .geo-clear:hover, .geo-undo:hover,
+.geo-font-up:hover, .geo-font-down:hover, .geo-delete:hover {
+  border-color: var(--brand-2); background: #eff6ff; transform: translateY(-1px);
+}
+.geo-tool.is-active {
+  background: var(--brand); color: #fff; border-color: var(--brand);
+}
+.geo-insert {
+  background: linear-gradient(135deg, #ea580c, #f97316); color: #fff; border: none;
+  box-shadow: 0 8px 18px rgba(234, 88, 12, .25);
+}
+.geo-insert:hover { filter: brightness(1.05); }
+.geo-insert:disabled { opacity: .6; cursor: wait; }
+
+.math-field-label { font-weight: 700; margin-top: 10px; display: block; }
+.math-editor textarea[name="question_text"] {
+  min-height: 110px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13.5px;
+}
+.math-editor input[name^="option_"] {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13.5px;
+}
+
+.geo-panel {
+  background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 12px;
+  box-shadow: var(--shadow);
+}
+.geo-tools { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.geo-canvas-wrap {
+  border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #fff;
+}
+.geo-canvas { display: block; width: 100%; height: auto; cursor: crosshair; touch-action: none; }
+.geo-eraser-size {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 8px; border: 1.5px solid var(--line); border-radius: 8px; background: #fff;
+}
+.geo-eraser-label {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 700; color: var(--muted); margin: 0;
+}
+.geo-eraser-range { width: 90px; accent-color: var(--accent); cursor: pointer; }
+.geo-eraser-size-val {
+  min-width: 1.4em; text-align: center; color: var(--brand-deep); font-variant-numeric: tabular-nums;
+}
+.geo-eraser-down, .geo-eraser-up {
+  font: inherit; font-size: 13px; font-weight: 700;
+  padding: 5px 8px; border-radius: 8px; cursor: pointer;
+  border: 1.5px solid var(--line); background: #fff; color: var(--ink);
+}
+.geo-eraser-down:hover, .geo-eraser-up:hover {
+  border-color: var(--accent); background: #fff7ed;
+}
+
+.math-preview {
+  background: #eef2f7; border: 1px dashed #93c5fd; border-radius: 14px; padding: 14px 16px;
+}
+.math-preview h3 {
+  margin: 0 0 6px; font-family: var(--display); font-size: 1rem; color: var(--brand-deep);
+}
+.math-preview .preview-hint { margin: 0 0 12px; }
+.math-preview-body .student-preview-box,
+.math-preview-body.student-preview-host .student-preview-box {
+  margin: 0; box-shadow: none;
+}
+.math-preview-body .option.preview-option { cursor: default; }
+.math-preview-body .option.preview-option:hover { transform: none; }
+.q-diagram {
+  display: block; max-width: 100%; height: auto; margin: 12px 0;
+  border: 1px solid var(--line); border-radius: 10px; background: #fff;
+}
+.q-content img.q-diagram { max-width: min(100%, 520px); }
+.math-hint { color: var(--muted); font-size: 13px; margin: 0 0 8px; }
+.option-row-math { display: grid; grid-template-columns: 28px 1fr; gap: 8px; align-items: center; margin-top: 8px; }
+.option-row-math span { font-weight: 800; color: var(--brand); }

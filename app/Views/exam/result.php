@@ -45,12 +45,14 @@
                     <?php endif; ?>
                     <span class="muted"><?= e(__('question')) ?> <?= $i + 1 ?> · <?= e($subjName) ?></span>
                 </header>
-                <p class="q-text"><?= e($q['question_text']) ?></p>
-                <?php if ($q['selected_option']): ?>
-                    <p><?= e(__('your_answer')) ?>: <strong><?= e($q['selected_option']) ?></strong> — <?= e($map[$q['selected_option']] ?? '') ?></p>
+                <p class="q-text q-content"><?= render_question($q['question_text'], $q['content_format'] ?? 'plain') ?></p>
+                <?php
+                $fmt = $q['content_format'] ?? 'plain';
+                if ($q['selected_option']): ?>
+                    <p><?= e(__('your_answer')) ?>: <strong><?= e($q['selected_option']) ?></strong> — <span class="option-math"><?= render_question($map[$q['selected_option']] ?? '', $fmt) ?></span></p>
                 <?php endif; ?>
                 <?php if ($status !== 'correct'): ?>
-                    <p><?= e(__('correct_answer')) ?>: <strong class="ok"><?= e($q['correct_option']) ?></strong> — <?= e($map[$q['correct_option']] ?? '') ?></p>
+                    <p><?= e(__('correct_answer')) ?>: <strong class="ok"><?= e($q['correct_option']) ?></strong> — <span class="option-math"><?= render_question($map[$q['correct_option']] ?? '', $fmt) ?></span></p>
                 <?php endif; ?>
             </article>
         <?php endforeach; ?>
@@ -65,9 +67,9 @@
                 <header>
                     <span class="muted"><?= e(__('question')) ?> <?= $i + 1 ?> · <?= e($subjName) ?></span>
                 </header>
-                <p class="q-text"><?= e($q['question_text']) ?></p>
+                <p class="q-text q-content"><?= render_question($q['question_text'], $q['content_format'] ?? 'plain') ?></p>
                 <?php if ($q['selected_option']): ?>
-                    <p><?= e(__('your_answer')) ?>: <strong><?= e($q['selected_option']) ?></strong> — <?= e($map[$q['selected_option']] ?? '') ?></p>
+                    <p><?= e(__('your_answer')) ?>: <strong><?= e($q['selected_option']) ?></strong> — <span class="option-math"><?= render_question($map[$q['selected_option']] ?? '', $q['content_format'] ?? 'plain') ?></span></p>
                 <?php else: ?>
                     <p class="muted"><?= e(__('unanswered')) ?></p>
                 <?php endif; ?>

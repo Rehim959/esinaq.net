@@ -6,6 +6,16 @@ namespace App\Core;
 
 final class Auth
 {
+    public const ROLE_SUPER = 'super_admin';
+    public const ROLE_ADMIN = 'admin';
+    public const ROLE_MODERATOR = 'moderator';
+
+    /** @return list<string> */
+    public static function adminRoles(): array
+    {
+        return [self::ROLE_SUPER, self::ROLE_ADMIN, self::ROLE_MODERATOR];
+    }
+
     public static function attemptAdmin(string $email, string $password): bool
     {
         $stmt = Database::connection()->prepare('SELECT * FROM admins WHERE email = ? LIMIT 1');
@@ -20,9 +30,9 @@ final class Auth
             return false;
         }
 
-        $role = (string) ($admin['role'] ?? 'super_admin');
-        if (!in_array($role, ['super_admin', 'moderator'], true)) {
-            $role = 'super_admin';
+        $role = (string) ($admin['role'] ?? self::ROLE_SUPER);
+        if (!in_array($role, self::adminRoles(), true)) {
+            $role = self::ROLE_SUPER;
         }
 
         Session::regenerate();
@@ -117,21 +127,183 @@ final class Auth
     public static function adminRole(): string
     {
         $role = Session::get('admin_role');
-        if (is_string($role) && in_array($role, ['super_admin', 'moderator'], true)) {
+        if (is_string($role) && in_array($role, self::adminRoles(), true)) {
             return $role;
         }
         // Legacy sessions before role column: treat as super_admin
-        return self::adminId() ? 'super_admin' : '';
+        return self::adminId() ? self::ROLE_SUPER : '';
     }
 
     public static function isSuperAdmin(): bool
     {
-        return self::adminId() !== null && self::adminRole() === 'super_admin';
+        return self::adminId() !== null && self::adminRole() === self::ROLE_SUPER;
+    }
+
+    public static function isAdmin(): bool
+    {
+        return self::adminId() !== null && self::adminRole() === self::ROLE_ADMIN;
     }
 
     public static function isModerator(): bool
     {
-        return self::adminId() !== null && self::adminRole() === 'moderator';
+        return self::adminId() !== null && self::adminRole() === self::ROLE_MODERATOR;
+    }
+
+    /** Super admin or admin — can edit/delete parents & children. */
+    public static function canManageAccounts(): bool
+    {
+        return self::isSuperAdmin() || self::isAdmin();
+    }
+
+    /** Super admin or admin — can hard-delete questions. */
+    public static function canDeleteQuestions(): bool
+    {
+        return self::canManageAccounts();
+    }
+
+    /** Super admin or admin — can open team page. */
+    public static function canManageTeam(): bool
+    {
+        return self::canManageAccounts();
+    }
+
+    /** Super admin or admin — destructive exam ops. */
+    public static function canManageExams(): bool
+    {
+        return self::canManageAccounts();
+    }
+
+    public static function canAddRole(string $role): bool
+    {
+        if ($role === self::ROLE_MODERATOR) {
+            return self::canManageTeam();
+        }
+        if ($role === self::ROLE_ADMIN) {
+            // Super creates admins; admin may also create/promote to admin
+            return self::isSuperAdmin() || self::isAdmin();
+        }
+        return false;
+    }
+
+    /**
+     * Who may activate/deactivate a target staff account.
+     * Super: admins + moderators. Admin: moderators only. Moderator: nobody.
+     * Nobody may toggle a super admin.
+     *
+     * @param array{id?:mixed,role?:mixed} $target
+     */
+    public static function canToggleStaff(array $target): bool
+    {
+        $targetId = (int) ($target['id'] ?? 0);
+        if ($targetId <= 0 || $targetId === self::adminId()) {
+            return false;
+        }
+
+        $targetRole = (string) ($target['role'] ?? self::ROLE_MODERATOR);
+        if ($targetRole === self::ROLE_SUPER) {
+            return false;
+        }
+        if ($targetRole === self::ROLE_ADMIN) {
+            return self::isSuperAdmin();
+        }
+        if ($targetRole === self::ROLE_MODERATOR) {
+            return self::canManageTeam();
+        }
+        return false;
+    }
+
+    /**
+     * Who may set a new password for a staff account.
+     * Super: admins + moderators + own account. Admin: admins + moderators.
+     * Nobody may change another super admin's password.
+     *
+     * @param array{id?:mixed,role?:mixed} $target
+     */
+    public static function canChangeStaffPassword(array $target): bool
+    {
+        if (!self::canManageTeam()) {
+            return false;
+        }
+
+        $targetId = (int) ($target['id'] ?? 0);
+        if ($targetId <= 0) {
+            return false;
+        }
+
+        $targetRole = (string) ($target['role'] ?? self::ROLE_MODERATOR);
+        if ($targetRole === self::ROLE_SUPER) {
+            // Only the super admin may change their own password — never another super
+            return self::isSuperAdmin() && $targetId === self::adminId();
+        }
+        if ($targetRole === self::ROLE_ADMIN || $targetRole === self::ROLE_MODERATOR) {
+            return self::isSuperAdmin() || self::isAdmin();
+        }
+        return false;
+    }
+
+    /**
+     * Who may change a staff member's role (never super admin, never self).
+     * Super: set other admins/moderators to admin or moderator.
+     * Admin: promote moderators to admin only.
+     *
+     * @param array{id?:mixed,role?:mixed} $target
+     */
+    public static function canChangeStaffRole(array $target): bool
+    {
+        $targetId = (int) ($target['id'] ?? 0);
+        if ($targetId <= 0 || $targetId === self::adminId()) {
+            return false;
+        }
+
+        $targetRole = (string) ($target['role'] ?? '');
+        if ($targetRole === self::ROLE_SUPER) {
+            return false;
+        }
+        if (self::isSuperAdmin()) {
+            return $targetRole === self::ROLE_ADMIN || $targetRole === self::ROLE_MODERATOR;
+        }
+        if (self::isAdmin()) {
+            return $targetRole === self::ROLE_MODERATOR;
+        }
+        return false;
+    }
+
+    /**
+     * Roles the current actor may assign to this target.
+     *
+     * @param array{id?:mixed,role?:mixed} $target
+     * @return list<string>
+     */
+    public static function assignableRolesFor(array $target): array
+    {
+        if (!self::canChangeStaffRole($target)) {
+            return [];
+        }
+        if (self::isSuperAdmin()) {
+            return [self::ROLE_ADMIN, self::ROLE_MODERATOR];
+        }
+        if (self::isAdmin()) {
+            return [self::ROLE_ADMIN];
+        }
+        return [];
+    }
+
+    /**
+     * @param array{id?:mixed,role?:mixed} $target
+     */
+    public static function canAssignStaffRole(array $target, string $newRole): bool
+    {
+        return in_array($newRole, self::assignableRolesFor($target), true);
+    }
+
+    public static function roleLabel(?string $role = null): string
+    {
+        $role = $role ?? self::adminRole();
+        return match ($role) {
+            self::ROLE_SUPER => __('role_super_admin'),
+            self::ROLE_ADMIN => __('role_admin'),
+            default => __('role_moderator'),
+        };
     }
 
     public static function parentId(): ?int
@@ -159,6 +331,33 @@ final class Auth
         if (!self::isSuperAdmin()) {
             Session::flash('error', __('err_forbidden'));
             redirect('/admin');
+        }
+    }
+
+    public static function requireAccountManager(): void
+    {
+        self::requireAdmin();
+        if (!self::canManageAccounts()) {
+            Session::flash('error', __('err_forbidden'));
+            redirect('/admin');
+        }
+    }
+
+    public static function requireTeamManager(): void
+    {
+        self::requireAdmin();
+        if (!self::canManageTeam()) {
+            Session::flash('error', __('err_forbidden'));
+            redirect('/admin');
+        }
+    }
+
+    public static function requireQuestionDelete(): void
+    {
+        self::requireAdmin();
+        if (!self::canDeleteQuestions()) {
+            Session::flash('error', __('err_forbidden'));
+            redirect('/admin/suallar');
         }
     }
 

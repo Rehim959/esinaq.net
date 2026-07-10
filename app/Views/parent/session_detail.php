@@ -22,16 +22,17 @@
                         <span class="badge badge-wrong"><?= e(__('wrong_label')) ?></span>
                         <span class="muted"><?= e(locale() === 'ru' ? ($q['subject_name_ru'] ?? $q['subject_name']) : $q['subject_name']) ?></span>
                     </header>
-                    <p class="q-text"><?= e($q['question_text']) ?></p>
+                    <p class="q-text q-content"><?= render_question($q['question_text'], $q['content_format'] ?? 'plain') ?></p>
                     <p><?= e(__('your_answer')) ?>: <strong><?= e($q['selected_option'] ?? '—') ?></strong>
                         <?php
+                        $fmt = $q['content_format'] ?? 'plain';
                         $sel = $q['selected_option'];
                         $map = ['A'=>$q['option_a'],'B'=>$q['option_b'],'C'=>$q['option_c'],'D'=>$q['option_d'],'E'=>$q['option_e']];
-                        if ($sel && isset($map[$sel])) echo ' — ' . e($map[$sel]);
+                        if ($sel && isset($map[$sel])) echo ' — <span class="option-math">' . render_question($map[$sel], $fmt) . '</span>';
                         ?>
                     </p>
                     <p><?= e(__('correct_answer')) ?>: <strong class="ok"><?= e($q['correct_option']) ?></strong>
-                        — <?= e($map[$q['correct_option']] ?? '') ?>
+                        — <span class="option-math"><?= render_question($map[$q['correct_option']] ?? '', $fmt) ?></span>
                     </p>
                     <?php if (!empty($q['explanation'])): ?>
                         <p class="hint"><?= e($q['explanation']) ?></p>

@@ -29,6 +29,10 @@
                             <a class="btn btn-sm" href="<?= e($examLink) ?>" target="_blank" rel="noopener"><?= e(__('open_exam_panel')) ?></a>
                             <a class="btn btn-sm btn-ghost" href="https://wa.me/?text=<?= $waText ?>" target="_blank" rel="noopener"><?= e(__('share_whatsapp')) ?></a>
                             <a class="btn btn-sm btn-ghost" href="mailto:?subject=<?= rawurlencode(__('share_exam_mail_subject', ['name' => $c['first_name']])) ?>&body=<?= $waText ?>"><?= e(__('share_email')) ?></a>
+                            <form method="post" action="<?= url('/valideyn/usaq/mail/' . (int) $c['id']) ?>" class="inline-form">
+                                <?= csrf_field() ?>
+                                <button class="btn btn-sm btn-ghost" type="submit"><?= e(__('resend_child_mail')) ?></button>
+                            </form>
                         </div>
                         <p class="tiny muted exam-link-url"><code><?= e($examLink) ?></code></p>
                     </div>

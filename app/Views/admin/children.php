@@ -47,16 +47,21 @@
                 <td><?= e($c['gender'] === 'girl' ? __('girl') : __('boy')) ?></td>
                 <td><code><?= e(child_password_display($c['password_hint'] ?? null, $c['first_name'] ?? null, $c['birth_date'] ?? null)) ?></code></td>
                 <td class="actions-cell">
-                    <form method="post" action="<?= url('/admin/usaq/sifre/' . $c['id']) ?>" class="inline-reset">
+                    <?php if (\App\Core\Auth::canManageAccounts()): ?>
+                    <a class="btn btn-sm" href="<?= url('/admin/usaq/duzelis/' . $c['id']) ?>"><?= e(__('edit')) ?></a>
+                    <form method="post" action="<?= e(form_get_action()) ?>" class="inline-reset">
+                        <?= route_hidden('/admin/usaq/sifre/' . (int) $c['id']) ?>
                         <?= csrf_field() ?>
                         <input type="text" name="new_password" placeholder="<?= e(__('new_or_auto')) ?>" class="input-sm">
                         <button class="btn btn-sm" type="submit"><?= e(__('reset_password_btn')) ?></button>
                     </form>
-                    <?php if (\App\Core\Auth::isSuperAdmin()): ?>
-                    <form method="post" action="<?= url('/admin/usaq/sil/' . $c['id']) ?>" class="inline-form" data-confirm="<?= e(__('confirm_delete_child')) ?>">
+                    <form method="post" action="<?= e(form_get_action()) ?>" class="inline-form" data-confirm="<?= e(__('confirm_delete_child')) ?>">
+                        <?= route_hidden('/admin/usaq/sil/' . (int) $c['id']) ?>
                         <?= csrf_field() ?>
                         <button class="btn btn-sm btn-danger" type="submit"><?= e(__('delete')) ?></button>
                     </form>
+                    <?php else: ?>
+                        <a class="btn btn-sm btn-ghost" href="<?= url('/admin/valideyn/' . $c['parent_id']) ?>"><?= e(__('view_details')) ?></a>
                     <?php endif; ?>
                 </td>
             </tr>

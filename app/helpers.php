@@ -55,6 +55,159 @@ function e(?string $value): string
     return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
+/** Detect KaTeX / diagram markup in question fields. */
+function question_looks_rich(string ...$parts): bool
+{
+    $joined = implode("\n", $parts);
+    return (bool) preg_match('/\\\\\\(|\\\\\\[|<img\\s/i', $joined);
+}
+
+/**
+ * Sanitize teacher-authored question HTML.
+ * Allows: text, newlines→br, and <img src="/uploads/questions/..."> only.
+ */
+function sanitize_question_html(string $raw): string
+{
+    $raw = str_replace(["\r\n", "\r"], "\n", $raw);
+    $imgs = [];
+    $raw = (string) preg_replace_callback(
+        '#<img\b[^>]*\bsrc\s*=\s*(["\'])([^"\']+)\1[^>]*>#i',
+        static function (array $m) use (&$imgs): string {
+            $src = $m[2];
+            if (!preg_match('#^/uploads/questions/[a-zA-Z0-9._-]+\.(?:png|jpe?g|webp)$#', $src)) {
+                return '';
+            }
+            $key = '%%IMG' . count($imgs) . '%%';
+            $imgs[$key] = '<img src="' . htmlspecialchars($src, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
+                . '" alt="diagram" class="q-diagram">';
+            return $key;
+        },
+        $raw
+    );
+
+    $escaped = htmlspecialchars($raw, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    $escaped = nl2br($escaped, false);
+    foreach ($imgs as $key => $tag) {
+        $escaped = str_replace($key, $tag, $escaped);
+    }
+    return $escaped;
+}
+
+/** Render question/option for display (plain escaped or sanitized HTML). */
+function render_question(?string $text, ?string $format = 'plain'): string
+{
+    $text = (string) $text;
+    if ($format === 'html') {
+        return $text;
+    }
+    return e($text);
+}
+
+/** Extract first /uploads/questions/... src from HTML, or empty. */
+function question_img_src(?string $html): string
+{
+    if ($html === null || $html === '') {
+        return '';
+    }
+    if (preg_match('#src\s*=\s*["\'](/uploads/questions/[a-zA-Z0-9._-]+\.(?:png|jpe?g|webp))["\']#i', $html, $m)) {
+        return $m[1];
+    }
+    return '';
+}
+
+/** Plain text from question/option HTML with images stripped. */
+function question_text_without_img(?string $html): string
+{
+    $html = (string) $html;
+    if ($html === '') {
+        return '';
+    }
+    $html = preg_replace('#<img\b[^>]*>#i', '', $html) ?? '';
+    $html = str_replace(['<br>', '<br/>', '<br />'], "\n", $html);
+    $html = html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $html = preg_replace("/[ \t]+/u", ' ', $html) ?? $html;
+    return trim($html);
+}
+
+/** True when any field contains an uploaded image. */
+function question_is_image(array $q): bool
+{
+    foreach (['question_text', 'option_a', 'option_b', 'option_c', 'option_d', 'option_e'] as $key) {
+        if (str_contains((string) ($q[$key] ?? ''), '<img')) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/** Absolute filesystem path for public uploads (public/ or flat public_html). */
+function uploads_path(string $relative = ''): string
+{
+    $base = defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__);
+    $candidates = [
+        $base . '/public/uploads',
+        $base . '/uploads',
+    ];
+    $root = $candidates[0];
+    foreach ($candidates as $c) {
+        if (is_dir($c) || is_dir(dirname($c))) {
+            // Prefer existing uploads dir; else public/uploads for local, uploads for flat
+            if (is_dir($c)) {
+                $root = $c;
+                break;
+            }
+        }
+    }
+    // Flat deploy: BASE_PATH is public_html → use BASE_PATH/uploads
+    if (is_dir($base . '/app') && !is_dir($base . '/public')) {
+        $root = $base . '/uploads';
+    } elseif (is_dir($base . '/public')) {
+        $root = $base . '/public/uploads';
+    } else {
+        $root = $base . '/uploads';
+    }
+    $rel = ltrim(str_replace('\\', '/', $relative), '/');
+    return $rel === '' ? $root : $root . '/' . $rel;
+}
+
+/** Normalize text for duplicate question detection. */
+function question_normalize_text(string $value): string
+{
+    $value = html_entity_decode(strip_tags($value), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $value = mb_strtolower($value, 'UTF-8');
+    $value = preg_replace('/\s+/u', ' ', $value) ?? '';
+    return trim($value);
+}
+
+/** Fingerprint of question + options (same subject/grade/sector compared separately). */
+function question_fingerprint(
+    string $questionText,
+    string $a,
+    string $b,
+    string $c,
+    string $d,
+    ?string $e = null
+): string {
+    return hash('sha256', implode("\n", [
+        question_normalize_text($questionText),
+        question_normalize_text($a),
+        question_normalize_text($b),
+        question_normalize_text($c),
+        question_normalize_text($d),
+        question_normalize_text((string) $e),
+    ]));
+}
+
+/** Short preview for admin reports. */
+function question_preview_text(string $text, int $max = 90): string
+{
+    $plain = question_normalize_text($text);
+    if (function_exists('mb_strimwidth')) {
+        return mb_strimwidth($plain, 0, $max, '…', 'UTF-8');
+    }
+    return strlen($plain) > $max ? substr($plain, 0, $max - 1) . '…' : $plain;
+}
+
 /** Display brand: eSınaq.net */
 function brand_name(): string
 {
@@ -163,14 +316,36 @@ function url(string $path = ''): string
 function asset(string $path): string
 {
     // Static files are real files under /assets — no front controller
-    return app_base_url() . '/assets/' . ltrim($path, '/');
+    $rel = ltrim($path, '/');
+    $url = app_base_url() . '/assets/' . $rel;
+    // Cache-bust so design updates show after deploy (public/ or flat public_html)
+    $candidates = [
+        (defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__)) . '/public/assets/' . $rel,
+        (defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__)) . '/assets/' . $rel,
+    ];
+    foreach ($candidates as $file) {
+        if (is_file($file)) {
+            return $url . '?v=' . filemtime($file);
+        }
+    }
+    return $url . '?v=20260710';
 }
 
-/** Resolve current request path for the router (pretty URL or ?r=). */
+/** Resolve current request path for the router (pretty URL or ?r= / POST r). */
 function request_path(): string
 {
-    if (isset($_GET['r']) && is_string($_GET['r']) && $_GET['r'] !== '') {
-        $path = '/' . ltrim($_GET['r'], '/');
+    foreach (['r'] as $key) {
+        if (isset($_GET[$key]) && is_string($_GET[$key]) && $_GET[$key] !== '') {
+            $path = '/' . ltrim($_GET[$key], '/');
+            return $path === '/' ? '/' : rtrim($path, '/');
+        }
+    }
+    // Some hosts strip query string on POST — accept hidden r field
+    if (
+        strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET')) === 'POST'
+        && isset($_POST['r']) && is_string($_POST['r']) && $_POST['r'] !== ''
+    ) {
+        $path = '/' . ltrim($_POST['r'], '/');
         return $path === '/' ? '/' : rtrim($path, '/');
     }
 

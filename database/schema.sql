@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS admins (
     email VARCHAR(190) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     full_name VARCHAR(150) NOT NULL,
-    role ENUM('super_admin','moderator') NOT NULL DEFAULT 'moderator',
+    role ENUM('super_admin','admin','moderator') NOT NULL DEFAULT 'moderator',
     is_active TINYINT(1) NOT NULL DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -68,11 +68,12 @@ CREATE TABLE IF NOT EXISTS questions (
     grade TINYINT UNSIGNED NOT NULL,
     sector ENUM('az','ru') NOT NULL,
     question_text TEXT NOT NULL,
-    option_a VARCHAR(500) NOT NULL,
-    option_b VARCHAR(500) NOT NULL,
-    option_c VARCHAR(500) NOT NULL,
-    option_d VARCHAR(500) NOT NULL,
-    option_e VARCHAR(500) NULL,
+    content_format ENUM('plain','html') NOT NULL DEFAULT 'plain',
+    option_a TEXT NOT NULL,
+    option_b TEXT NOT NULL,
+    option_c TEXT NOT NULL,
+    option_d TEXT NOT NULL,
+    option_e TEXT NULL,
     correct_option ENUM('A','B','C','D','E') NOT NULL,
     difficulty ENUM('easy','medium','hard') NOT NULL DEFAULT 'medium',
     topic VARCHAR(150) NULL,
@@ -151,6 +152,24 @@ CREATE TABLE IF NOT EXISTS student_answers (
     UNIQUE KEY uq_session_question (session_id, question_id),
     CONSTRAINT fk_sa_session FOREIGN KEY (session_id) REFERENCES exam_sessions(id) ON DELETE CASCADE,
     CONSTRAINT fk_sa_question FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS exam_invites (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    exam_id INT UNSIGNED NOT NULL,
+    parent_id INT UNSIGNED NOT NULL,
+    token CHAR(64) NOT NULL,
+    status ENUM('invited','interested','approved','rejected') NOT NULL DEFAULT 'invited',
+    interested_at TIMESTAMP NULL DEFAULT NULL,
+    decided_at TIMESTAMP NULL DEFAULT NULL,
+    decided_by INT UNSIGNED NULL DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_exam_parent (exam_id, parent_id),
+    UNIQUE KEY uq_invite_token (token),
+    INDEX idx_exam_status (exam_id, status),
+    CONSTRAINT fk_invite_exam FOREIGN KEY (exam_id) REFERENCES exams(id) ON DELETE CASCADE,
+    CONSTRAINT fk_invite_parent FOREIGN KEY (parent_id) REFERENCES parents(id) ON DELETE CASCADE,
+    CONSTRAINT fk_invite_admin FOREIGN KEY (decided_by) REFERENCES admins(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS email_logs (

@@ -10,6 +10,7 @@ use App\Core\RateLimiter;
 use App\Core\Session;
 use App\Core\View;
 use App\Services\ExamService;
+use App\Services\ExamInviteService;
 
 final class ExamController
 {
@@ -69,7 +70,7 @@ final class ExamController
         $child = $this->requireChild($token);
         $pdo = Database::connection();
 
-        // status=running means admin started it — show immediately for matching grade/sector
+        // status=running + grade/sector match; invite-gated when invites exist for exam
         $exams = $pdo->prepare(
             "SELECT e.*,
                 (SELECT es.status FROM exam_sessions es WHERE es.exam_id = e.id AND es.child_id = ? LIMIT 1) AS my_status,
@@ -81,11 +82,21 @@ final class ExamController
                AND e.grade = ?
                AND e.sector = ?
                AND (e.ends_at IS NULL OR e.ends_at >= NOW())
+               AND (
+                    NOT EXISTS (SELECT 1 FROM exam_invites ei WHERE ei.exam_id = e.id)
+                    OR EXISTS (
+                        SELECT 1 FROM exam_invites ei
+                        WHERE ei.exam_id = e.id
+                          AND ei.parent_id = ?
+                          AND ei.status = 'approved'
+                    )
+               )
              ORDER BY e.id DESC"
         );
         $exams->execute([
             $child['id'], $child['id'], $child['id'], $child['id'],
             $child['grade'], $child['sector'],
+            $child['parent_id'],
         ]);
 
         $rows = $exams->fetchAll();
@@ -134,6 +145,11 @@ final class ExamController
 
         if (!$examRow) {
             Session::flash('error', __('err_exam_not_found'));
+            redirect('/imtahan/' . $token . '/siyahi');
+        }
+
+        if (!(new ExamInviteService())->childMayAccessExam($child, $examId)) {
+            Session::flash('error', __('err_exam_not_approved'));
             redirect('/imtahan/' . $token . '/siyahi');
         }
 

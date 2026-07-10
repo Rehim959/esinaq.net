@@ -10,10 +10,32 @@
         <div><?= e(__('date')) ?>: <?= e(format_date($parent['created_at'], 'd.m.Y H:i')) ?></div>
     </div>
 
+    <?php if (\App\Core\Auth::canManageAccounts()): ?>
     <div class="admin-panels">
         <section class="form-card">
+            <h2><?= e(__('edit_parent_name')) ?></h2>
+            <form method="post" action="<?= e(form_get_action()) ?>">
+                <?= route_hidden('/admin/valideyn/ad/' . (int) $parent['id']) ?>
+                <?= csrf_field() ?>
+                <div class="grid-3">
+                    <label><?= e(__('first_name')) ?>
+                        <input type="text" name="first_name" required value="<?= e((string) $parent['first_name']) ?>">
+                    </label>
+                    <label><?= e(__('last_name')) ?>
+                        <input type="text" name="last_name" required value="<?= e((string) $parent['last_name']) ?>">
+                    </label>
+                    <label><?= e(__('patronymic')) ?>
+                        <input type="text" name="patronymic" required value="<?= e((string) ($parent['patronymic'] ?? '')) ?>">
+                    </label>
+                </div>
+                <button class="btn" type="submit"><?= e(__('save_changes')) ?></button>
+            </form>
+        </section>
+
+        <section class="form-card">
             <h2><?= e(__('reset_parent_password')) ?></h2>
-            <form method="post" action="<?= url('/admin/valideyn/sifre/' . $parent['id']) ?>">
+            <form method="post" action="<?= e(form_get_action()) ?>">
+                <?= route_hidden('/admin/valideyn/sifre/' . (int) $parent['id']) ?>
                 <?= csrf_field() ?>
                 <label><?= e(__('new_password')) ?>
                     <input type="text" name="new_password" minlength="6" required placeholder="YeniSifre123">
@@ -22,17 +44,19 @@
             </form>
         </section>
 
-        <?php if (\App\Core\Auth::isSuperAdmin()): ?>
         <section class="form-card danger-zone">
             <h2><?= e(__('delete_parent')) ?></h2>
             <p class="muted"><?= e(__('delete_parent_help')) ?></p>
-            <form method="post" action="<?= url('/admin/valideyn/sil/' . $parent['id']) ?>" data-confirm="<?= e(__('confirm_delete_parent')) ?>">
+            <form method="post" action="<?= e(form_get_action()) ?>" data-confirm="<?= e(__('confirm_delete_parent')) ?>">
+                <?= route_hidden('/admin/valideyn/sil/' . (int) $parent['id']) ?>
                 <?= csrf_field() ?>
                 <button class="btn btn-danger" type="submit"><?= e(__('delete')) ?></button>
             </form>
         </section>
-        <?php endif; ?>
     </div>
+    <?php else: ?>
+        <p class="muted"><?= e(__('moderator_accounts_readonly')) ?></p>
+    <?php endif; ?>
 
     <h2><?= e(__('children_list')) ?></h2>
     <?php if (empty($children)): ?>
@@ -62,18 +86,23 @@
                     <td><code><?= e(child_password_display($c['password_hint'] ?? null, $c['first_name'] ?? null, $c['birth_date'] ?? null)) ?></code></td>
                     <td class="tiny"><code><?= e(url('/imtahan/' . $c['access_token'])) ?></code></td>
                     <td class="actions-cell">
-                        <form method="post" action="<?= url('/admin/usaq/sifre/' . $c['id']) ?>" class="inline-reset">
+                        <?php if (\App\Core\Auth::canManageAccounts()): ?>
+                        <a class="btn btn-sm" href="<?= url('/admin/usaq/duzelis/' . $c['id'] . '?back=parent') ?>"><?= e(__('edit')) ?></a>
+                        <form method="post" action="<?= e(form_get_action()) ?>" class="inline-reset">
+                            <?= route_hidden('/admin/usaq/sifre/' . (int) $c['id']) ?>
                             <?= csrf_field() ?>
                             <input type="hidden" name="back" value="parent">
                             <input type="text" name="new_password" placeholder="<?= e(__('new_password')) ?>" class="input-sm">
                             <button class="btn btn-sm" type="submit"><?= e(__('reset_password_btn')) ?></button>
                         </form>
-                        <?php if (\App\Core\Auth::isSuperAdmin()): ?>
-                        <form method="post" action="<?= url('/admin/usaq/sil/' . $c['id']) ?>" class="inline-form" data-confirm="<?= e(__('confirm_delete_child')) ?>">
+                        <form method="post" action="<?= e(form_get_action()) ?>" class="inline-form" data-confirm="<?= e(__('confirm_delete_child')) ?>">
+                            <?= route_hidden('/admin/usaq/sil/' . (int) $c['id']) ?>
                             <?= csrf_field() ?>
                             <input type="hidden" name="back" value="parent">
                             <button class="btn btn-sm btn-danger" type="submit"><?= e(__('delete')) ?></button>
                         </form>
+                        <?php else: ?>
+                            <span class="muted tiny">—</span>
                         <?php endif; ?>
                     </td>
                 </tr>
@@ -94,13 +123,13 @@
         </tr>
         </thead>
         <tbody>
-        <?php foreach ($sessions as $s): ?>
+        <?php foreach (($sessions ?? []) as $s): ?>
             <tr>
                 <td><?= e(person_full_name($s)) ?></td>
-                <td><?= e($s['title']) ?></td>
-                <td><?= e($s['status']) ?></td>
-                <td><?= $s['percentage'] !== null ? e((string)$s['percentage']) . '% (' . e((string)$s['letter_grade']) . ')' : '—' ?></td>
-                <td><?= e(format_date($s['finished_at'] ?? $s['started_at'])) ?></td>
+                <td><?= e($s['title'] ?? '') ?></td>
+                <td><?= e($s['status'] ?? '') ?></td>
+                <td><?= $s['percentage'] !== null ? e((string) $s['percentage']) . '% (' . e((string) $s['letter_grade']) . ')' : '—' ?></td>
+                <td><?= e(format_date($s['finished_at'] ?? $s['started_at'] ?? null, 'd.m.Y H:i')) ?></td>
             </tr>
         <?php endforeach; ?>
         <?php if (empty($sessions)): ?>

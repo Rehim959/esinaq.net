@@ -73,9 +73,10 @@ $unfinishedList = array_keys($unfinishedSubjects);
                     <span><?= e(__('question_n_of', ['n' => $currentIndex + 1, 'total' => $total])) ?></span>
                     <span class="subject-tag"><?= e($subjName) ?></span>
                 </div>
-                <h2 class="q-title"><?= e($q['question_text']) ?></h2>
+                <h2 class="q-title q-content"><?= render_question($q['question_text'], $q['content_format'] ?? 'plain') ?></h2>
                 <div class="options" id="options">
                     <?php
+                    $fmt = $q['content_format'] ?? 'plain';
                     $opts = ['A' => $q['option_a'], 'B' => $q['option_b'], 'C' => $q['option_c'], 'D' => $q['option_d']];
                     if (!empty($q['option_e'])) $opts['E'] = $q['option_e'];
                     $currentSel = $answerMap[(int)$q['id']] ?? null;
@@ -83,7 +84,7 @@ $unfinishedList = array_keys($unfinishedSubjects);
                     ?>
                         <button type="button" class="option <?= $currentSel === $letter ? 'selected' : '' ?>" data-opt="<?= $letter ?>">
                             <span class="opt-letter"><?= $letter ?></span>
-                            <span><?= e($text) ?></span>
+                            <span class="option-math"><?= render_question($text, $fmt) ?></span>
                         </button>
                     <?php endforeach; ?>
                 </div>
